@@ -1,0 +1,13 @@
+server:
+  port: 8080
+
+spring:
+   profiles:
+
+     #active:   devtest
+#     active:   dev
+#     active:   test
+     active:    pro
+
+   jmx:
+     default-domain: BondService

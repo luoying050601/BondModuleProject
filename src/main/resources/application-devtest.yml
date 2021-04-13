@@ -1,0 +1,40 @@
+spring:
+  datasource:
+     primary: #第一数据源
+         username: stm
+         password: stm
+         url: jdbc:oracle:thin:@10.8.2.124:1561:TEST
+         driver-class-name: oracle.jdbc.driver.OracleDriver
+     secondary: #第二数据源
+         username: cceed_soainfra
+         password: welcome1
+         url: jdbc:oracle:thin:@10.8.2.165:1521:fmwdbtest
+         driver-class-name: oracle.jdbc.driver.OracleDriver
+
+  ldap:
+    username: cn=orcladmin
+    password: weblogic1
+    urls: ldap://idmtest1.cscec8b.com.cn:3059
+    base: cn=Users,dc=cscec8b,dc=com,dc=cn
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+    multipart:
+          enabled: true
+          max-file-size: 20MB
+          max-request-size: 1000MB
+  jackson:
+      default-property-inclusion: non_null
+
+jwt:
+  secret: CSCEC8B
+  expiration: 72000000    #毫秒
+
+url:
+  DBPMApproval: http://tapp.cscec8b.com.cn        #物料申请单 流程服务接口的URL
+  upload: http://tapp.cscec8b.com.cn               #下载
+  BondService :  /BondService/
+jndiName:
+    primary:   jdbc/STMConnDS
+    secondary:  jdbc/SOAConnDS

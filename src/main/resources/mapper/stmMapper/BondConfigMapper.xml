@@ -1,0 +1,716 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cscec8b.bond.module.dao.BondConfigApiDao">
+    <!-- 查询保证金支付-->
+    <select id="getOrgPayDefsList" resultType="com.cscec8b.bond.module.object.BondOrgPayDefs">
+        select * from (
+        select temp.*,rownum rn from (
+        select count(1) over() total,
+        f.def_id defId,
+
+        f.company_id companyId,
+        s.NAME companyName,
+        substr(s.NAME,0,5) company,
+
+        f.org_short_name orgShortName,
+        f.account_name accountName,
+        f.account_bank_number accountBankNumber,
+        f.department_sect departmentSect,
+        (
+        SELECT
+        v.segment_desc segmentDesc
+        FROM stm_segment_values_v   v
+        WHERE v.status = 'Y'
+        AND v.summary_flag = 'N'
+        AND v.segment_type ='CCEED_COA_DP'
+        and f.department_sect=v.segment_code(+)
+        and rownum=1
+        ) departmentDesc,
+        f.account_bank accountBank,
+        f.account_person_name accountPersonName,
+        f.account_segment accountSegment,
+        v.SEGMENT_DESC accountSegmentName,
+        (case
+        when f.effective_end_date is not null and
+        to_char(f.effective_start_date, 'yyyy-MM-dd')&lt;=
+        to_char(sysdate, 'yyyy-MM-dd') and
+        to_char(sysdate, 'yyyy-MM-dd') &lt;=
+        to_char(f.effective_end_date, 'yyyy-MM-dd') then
+        'Y'
+        when f.effective_end_date is not null and
+        (to_char(sysdate, 'yyyy-MM-dd') &lt;
+            to_char(f.effective_start_date, 'yyyy-MM-dd')) or
+        to_char(sysdate, 'yyyy-MM-dd') >
+        to_char(f.effective_end_date, 'yyyy-MM-dd') then
+        'N'
+        else
+        f.enable_flag
+        end) enableFlag,
+        to_char(f.effective_start_date,'yyyy-MM-dd') effectiveStartDate,
+        to_char(f.effective_end_date,'yyyy-MM-dd')effectiveEndDate,
+
+        f.FINANCE_HANDLER financeHandler,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where f.FINANCE_HANDLER=v.EMPLOYEE_ID ) financeHandlerName,
+
+        f.MARKET_HANDLER marketHandler,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where f.MARKET_HANDLER=v.EMPLOYEE_ID ) marketHandlerName,
+        f.CONTACE_SEGMENT_CODE contactSegmentCode,
+
+        (select segment_desc from stm.stm_segment_values_v ssv
+        where segment_code=f.CONTACE_SEGMENT_CODE
+        AND ssv.segment_type ='CCEED_COA_IC') contactSegmentDesc,
+        f.AGENT_RULE agentRule ,
+        f.NO_AGENT_RULE noAgentRule,
+        f.back_up_segment backUpSegment,
+        (select segment_desc from stm.stm_segment_values_v ssv
+        where segment_code=f.back_up_segment
+        AND ssv.segment_type ='CCEED_COA_SP') backUpSegmentDesc,
+        f.bank_type bankType,
+        (select meaning
+        from stm.stm_lookup_values_v v
+        where v.lookup_type = 'CCEED_BANK_TYPE'
+        and v.status='Y'
+        AND f.bank_type=v.lookup_code )bankTypeName,
+        f.province province,
+        f.city city
+        from fdm.fdm_bond_org_pay_defs_t f,
+        stm_organizations_v s,
+        stm_segment_values_v v
+        where f.company_id = s.organization_id
+        and v.SEGMENT_CODE = f.account_segment
+        and v.status = 'Y'
+        and v.SUMMARY_FLAG = 'N'
+        and v.SEGMENT_TYPE = 'CCEED_COA_AC'
+        and f.company_id in
+        ( SELECT DISTINCT V.organization_id_child organizationId
+        FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+        STM.STM_ORGANIZATIONS_V         SOV
+        WHERE SOV.organization_id = V.organization_id_child
+        AND SOV.TYPE = 'CCEED5'
+        AND v.org_structure_version_id = 4061
+        CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+        START WITH v.organization_id_parent IN
+        (select sov1.org_id
+
+        from stm_per_assignments_v v1,
+        stm.stm_per_people_v  spp1,
+        stm_organizations_v   sov1
+        where v1.person_id = spp1.PERSON_ID
+        and sov1.organization_id = v1.ORGANIZATION_ID
+        and trunc(sysdate) between spp1.EFFECTIVE_START_DATE and
+        spp1.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v1.EFFECTIVE_START_DATE and
+        v1.EFFECTIVE_END_DATE
+        AND spp1.EMPLOYEE_NUMBER = #{cscecUser.userCode})
+
+        UNION
+
+        select SOV3.org_id organizationId
+        from stm_per_assignments_v v3, stm.stm_per_people_v spp3,
+        STM.STM_ORGANIZATIONS_V         SOV3
+        where v3.person_id = spp3.PERSON_ID
+        and sov3.organization_id = v3.ORGANIZATION_ID
+        and trunc(sysdate) between spp3.EFFECTIVE_START_DATE and
+        spp3.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v3.EFFECTIVE_START_DATE and
+        v3.EFFECTIVE_END_DATE
+        and spp3.EMPLOYEE_NUMBER = #{cscecUser.userCode}
+        )
+        <if test="BondOrgPayDefs.orderCol==null or BondOrgPayDefs.orderCol==''  ">
+            ORDER BY company ASC
+        </if>
+        <if test="BondOrgPayDefs.orderCol!=null and BondOrgPayDefs.orderCol!=''">
+            ORDER BY  <![CDATA[${BondOrgPayDefs.orderCol}]]>
+        </if>
+        <if test="BondOrgPayDefs.orderType!=null and BondOrgPayDefs.orderType!='' and BondOrgPayDefs.orderCol!=null and BondOrgPayDefs.orderCol!=''">
+            ${BondOrgPayDefs.orderType}
+        </if>
+        <if test="BondOrgPayDefs.orderCol!=null and BondOrgPayDefs.orderCol!=''">
+            <if test="BondOrgPayDefs.orderType==null or BondOrgPayDefs.orderType==''">
+                DESC
+            </if>
+        </if>
+        )temp
+        )WHERE rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+
+
+
+    <!--获取组织下的支付方式的数量-->
+    <select id="getBondOrgPayDefByOrgId" resultType="int">
+      select count(*) from fdm.fdm_bond_org_pay_defs_t
+      where COMPANY_ID=#{orgId}
+      and ENABLE_FLAG='Y'
+    </select>
+
+    <select id="getSimpleBondOrgPayDefsByOrgId" resultType="com.cscec8b.bond.module.object.BondOrgPayDefs">
+
+      select
+        f.def_id              defId,
+        f.company_id   companyId,
+        f.org_short_name orgShortName,
+        f.account_name accountName,
+        f.account_bank_number accountBankNumber,
+        f.department_sect departmentSect,
+        (
+        SELECT
+        v.segment_desc segmentDesc
+        FROM stm_segment_values_v   v
+        WHERE v.status = 'Y'
+        AND v.summary_flag = 'N'
+        AND v.segment_type ='CCEED_COA_DP'
+        and f.department_sect=v.segment_code(+)
+        and rownum=1
+        ) departmentDesc,
+        f.account_bank accountBank,
+        f.account_person_name accountPersonName,
+        f.account_segment accountSegment,
+        (case
+        when f.effective_end_date is not null and
+        to_char(f.effective_start_date, 'yyyy-MM-dd')&lt;=
+        to_char(sysdate, 'yyyy-MM-dd') and
+        to_char(sysdate, 'yyyy-MM-dd')&lt;=
+        to_char(f.effective_end_date, 'yyyy-MM-dd') then
+        'Y'
+        when f.effective_end_date is not null and
+        (to_char(sysdate, 'yyyy-MM-dd') &lt;
+            to_char(f.effective_start_date, 'yyyy-MM-dd')) or
+        to_char(sysdate, 'yyyy-MM-dd') >
+        to_char(f.effective_end_date, 'yyyy-MM-dd') then
+        'N'
+        else
+        f.enable_flag
+        end) enableFlag,
+        to_char(f.effective_start_date,'yyyy-MM-dd') effectiveStartDate,
+        to_char(f.effective_end_date,'yyyy-MM-dd')effectiveEndDate,
+        f.FINANCE_HANDLER financeHandler,
+        f.MARKET_HANDLER marketHandler,
+        f.CONTACE_SEGMENT_CODE contactSegmentCode,
+        (select segment_desc from stm.stm_segment_values_v ssv
+        where segment_code=f.CONTACE_SEGMENT_CODE
+        AND ssv.segment_type ='CCEED_COA_IC') contactSegmentDesc,
+        f.AGENT_RULE agentRule ,
+        f.NO_AGENT_RULE noAgentRule,
+        f.back_up_segment backUpSegment,
+        (select segment_desc from stm.stm_segment_values_v ssv
+        where segment_code=f.back_up_segment
+        AND ssv.segment_type ='CCEED_COA_SP') backUpSegmentDesc,
+        f.bank_type bankType,
+        f.province province,
+        f.city city
+      from fdm.fdm_bond_org_pay_defs_t f
+      where COMPANY_ID=#{orgId}
+      and ENABLE_FLAG='Y'
+    </select>
+    <!-- 新增保证金支付-->
+    <insert id="insertBondOrgPayDefs">
+        insert into fdm.fdm_bond_org_pay_defs_t(
+        DEF_ID,
+        COMPANY_ID,
+        account_name,
+        org_short_name,
+        account_bank_number,
+        department_sect,
+        account_bank,
+        ACCOUNT_PERSON_NAME,
+        ACCOUNT_SEGMENT,
+        effective_start_date,
+        effective_end_date,
+        ENABLE_FLAG,
+        CREATION_DATE,
+        CREATED_BY,
+        LAST_UPDATED_BY,
+        LAST_UPDATE_DATE,
+
+        FINANCE_HANDLER,
+        MARKET_HANDLER,
+        CONTACE_SEGMENT_CODE,
+        AGENT_RULE,
+        NO_AGENT_RULE,
+        back_up_segment,
+        bank_type,
+        province,
+        city
+        )
+        values(
+        #{bondOrgPayDefs.defId,jdbcType=NUMERIC},
+        #{bondOrgPayDefs.companyId,jdbcType=NUMERIC},
+        #{bondOrgPayDefs.accountName,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.orgShortName,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.accountBankNumber,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.departmentSect,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.accountBank,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.accountPersonName,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.accountSegment,jdbcType=VARCHAR},
+        <if test="bondOrgPayDefs.effectiveStartDate == null or bondOrgPayDefs.effectiveStartDate ==''">
+            null,
+        </if>
+
+        <if test="bondOrgPayDefs.effectiveStartDate != null and bondOrgPayDefs.effectiveStartDate !=''">
+            to_date(#{bondOrgPayDefs.effectiveStartDate},'yyyy-mm-dd'),
+        </if>
+
+        <if test="bondOrgPayDefs.effectiveEndDate == null or bondOrgPayDefs.effectiveEndDate ==''">
+            null,
+        </if>
+
+        <if test="bondOrgPayDefs.effectiveEndDate != null and bondOrgPayDefs.effectiveEndDate !=''">
+            to_date(#{bondOrgPayDefs.effectiveEndDate},'yyyy-mm-dd'),
+        </if>
+        #{bondOrgPayDefs.enableFlag,jdbcType=VARCHAR},
+        sysdate,
+        #{cscecUser.userId,jdbcType=NUMERIC},
+        #{cscecUser.userId,jdbcType=NUMERIC},
+        sysdate,
+        #{bondOrgPayDefs.financeHandler,jdbcType=NUMERIC},
+        #{bondOrgPayDefs.marketHandler,jdbcType=NUMERIC},
+        #{bondOrgPayDefs.contactSegmentCode,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.agentRule,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.noAgentRule,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.backUpSegment,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.bankType,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.province,jdbcType=VARCHAR},
+        #{bondOrgPayDefs.city,jdbcType=VARCHAR}
+        )
+    </insert>
+    <!--根据id修改状态-->
+    <update id="delBondOrgPayDef">
+        UPDATE fdm.fdm_bond_org_pay_defs_t
+        SET ENABLE_FLAG = 'N'
+        WHERE DEF_ID = #{defId}
+    </update>
+    <!--根据id修改状态-->
+    <update id="delBondCategory">
+        UPDATE fdm.fdm_bond_category_t
+        SET ENABLE_FLAG = 'N'
+        WHERE CATEGORY_ID = #{categoryId}
+    </update>
+    <delete id="delTendereeAccount">
+        DELETE FROM fdm.fdm_bond_tenderee_accounts_t
+        WHERE ACCOUNT_ID = #{accountId}
+    </delete>
+
+    <!--修改保证金支付信息-->
+    <update id="updateBondOrgPayDefs" parameterType="com.cscec8b.bond.module.object.BondOrgPayDefs">
+        UPDATE fdm.fdm_bond_org_pay_defs_t
+        SET
+        FINANCE_HANDLER=#{bondOrgPayDefs.financeHandler,jdbcType=NUMERIC},
+        MARKET_HANDLER=#{bondOrgPayDefs.marketHandler,jdbcType=NUMERIC},
+        CONTACE_SEGMENT_CODE=#{bondOrgPayDefs.contactSegmentCode,jdbcType=VARCHAR},
+        AGENT_RULE=#{bondOrgPayDefs.agentRule,jdbcType=VARCHAR},
+        NO_AGENT_RULE=#{bondOrgPayDefs.noAgentRule,jdbcType=VARCHAR},
+        back_up_segment=#{bondOrgPayDefs.backUpSegment,jdbcType=VARCHAR},
+        bank_type=#{bondOrgPayDefs.bankType,jdbcType=VARCHAR},
+        province=#{bondOrgPayDefs.province,jdbcType=VARCHAR},
+        city=#{bondOrgPayDefs.city,jdbcType=VARCHAR},
+
+        COMPANY_ID=#{bondOrgPayDefs.companyId,jdbcType=NUMERIC},
+        ACCOUNT_NAME=#{bondOrgPayDefs.accountName,jdbcType=VARCHAR},
+        ORG_SHORT_NAME=#{bondOrgPayDefs.orgShortName,jdbcType=VARCHAR},
+        DEPARTMENT_SECT=#{bondOrgPayDefs.departmentSect,jdbcType=VARCHAR},
+        ACCOUNT_BANK_NUMBER=#{bondOrgPayDefs.accountBankNumber,jdbcType=VARCHAR},
+        ACCOUNT_BANK=#{bondOrgPayDefs.accountBank,jdbcType=VARCHAR},
+        ACCOUNT_PERSON_NAME=#{bondOrgPayDefs.accountPersonName,jdbcType=VARCHAR},
+        ACCOUNT_SEGMENT=#{bondOrgPayDefs.accountSegment,jdbcType=VARCHAR},
+        ENABLE_FLAG=#{bondOrgPayDefs.enableFlag,jdbcType=VARCHAR}
+        <if test="bondOrgPayDefs.effectiveStartDate == null or bondOrgPayDefs.effectiveStartDate ==''">
+            , EFFECTIVE_START_DATE = null
+        </if>
+        <if test="bondOrgPayDefs.effectiveStartDate != null and bondOrgPayDefs.effectiveStartDate !=''">
+            , EFFECTIVE_START_DATE=to_date(#{bondOrgPayDefs.effectiveStartDate},'yyyy-mm-dd')
+        </if>
+        <if test="bondOrgPayDefs.effectiveEndDate == null or bondOrgPayDefs.effectiveEndDate ==''">
+            , EFFECTIVE_END_DATE= null
+        </if>
+        <if test="bondOrgPayDefs.effectiveEndDate != null and bondOrgPayDefs.effectiveEndDate !=''">
+            , EFFECTIVE_END_DATE=to_date(#{bondOrgPayDefs.effectiveEndDate},'yyyy-mm-dd')
+        </if>
+
+        WHERE DEF_ID=#{bondOrgPayDefs.defId}
+    </update>
+    <!--查询分类定义-->
+    <select id="getBondCategoryList" resultType="com.cscec8b.bond.module.object.BondCategory">
+        select * from (select temp.*,rownum rn from (
+        select count(1) over() total,
+        te.category_id categoryId,
+        te.Category_Type categoryType,
+        te.Bond_Type bondType,
+        te.Account_Segment accountSegment,
+        v.SEGMENT_DESC accountSegmentName,
+        (case
+        when te.effective_end_date is not null and
+        to_char(te.effective_start_date, 'yyyy-MM-dd') &lt;=
+        to_char(sysdate, 'yyyy-MM-dd') and
+        to_char(sysdate, 'yyyy-MM-dd') &lt;=
+        to_char(te.effective_end_date, 'yyyy-MM-dd') then
+        'Y'
+        when te.effective_end_date is not null and
+        (to_char(sysdate, 'yyyy-MM-dd') &lt;
+        to_char(te.effective_start_date, 'yyyy-MM-dd')) or
+        to_char(sysdate, 'yyyy-MM-dd') >
+        to_char(te.effective_end_date, 'yyyy-MM-dd') then
+        'N'
+        else
+        te.Enable_Flag
+        end) enableFlag,
+        to_char(te.effective_start_date,'yyyy-mm-dd') effectiveStartDate,
+        to_char(te.effective_end_date,'yyyy-mm-dd')effectiveEndDate
+        from
+        fdm.fdm_bond_category_t te,
+        stm_segment_values_v v
+        where te.Account_Segment = v.SEGMENT_CODE
+        and v.status = 'Y'
+        and v.SUMMARY_FLAG = 'N'
+        and v.SEGMENT_type = 'CCEED_COA_AC'
+        <if test="bondCategory.orderCol==null or bondCategory.orderCol==''  ">
+            ORDER BY te.creation_date DESC
+        </if>
+        <if test="bondCategory.orderCol!=null and bondCategory.orderCol!=''">
+            ORDER BY  <![CDATA[${bondCategory.orderCol}]]>
+        </if>
+        <if test="bondCategory.orderType!=null and bondCategory.orderType!='' and bondCategory.orderCol!=null and bondCategory.orderCol!=''">
+            ${bondCategory.orderType}
+        </if>
+        <if test="bondCategory.orderCol!=null and bondCategory.orderCol!=''">
+            <if test="bondCategory.orderType==null or bondCategory.orderType==''">
+                DESC
+            </if>
+        </if>
+        )temp
+        )WHERE rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+    <!--新增分类定义-->
+    <insert id="insertBondCategory">
+        insert into fdm.fdm_bond_category_t(
+        CATEGORY_ID,
+        category_type,
+        bond_type,
+        account_segment,
+        effective_start_date,
+        effective_end_date,
+        ENABLE_FLAG,
+        creation_date,
+        created_by,
+        last_updated_by,
+        last_update_date
+        )
+        values(
+        #{bondCategory.categoryId,jdbcType=NUMERIC},
+        #{bondCategory.categoryType,jdbcType=VARCHAR},
+        #{bondCategory.bondType,jdbcType=VARCHAR},
+        #{bondCategory.accountSegment,jdbcType=VARCHAR},
+        <if test="bondCategory.effectiveStartDate == null or bondCategory.effectiveStartDate ==''">
+            null,
+        </if>
+
+        <if test="bondCategory.effectiveStartDate != null and bondCategory.effectiveStartDate !=''">
+            to_date(#{bondCategory.effectiveStartDate},'yyyy-mm-dd'),
+        </if>
+
+        <if test="bondCategory.effectiveEndDate == null or bondCategory.effectiveEndDate ==''">
+            null,
+        </if>
+
+        <if test="bondCategory.effectiveEndDate != null and bondCategory.effectiveEndDate !=''">
+            to_date(#{bondCategory.effectiveEndDate},'yyyy-mm-dd'),
+        </if>
+        #{bondCategory.enableFlag,jdbcType=VARCHAR},
+        sysdate,
+        #{cscecUser.userId,jdbcType=NUMERIC},
+        #{cscecUser.userId,jdbcType=NUMERIC},
+        sysdate
+        )
+    </insert>
+
+    <!--修改分类定义-->
+    <update id="updateBondCategory" parameterType="com.cscec8b.bond.module.object.BondCategory">
+        UPDATE fdm.fdm_bond_category_t
+        SET
+        CATEGORY_TYPE = #{bondCategory.categoryType,jdbcType=VARCHAR},
+        BOND_TYPE = #{bondCategory.bondType,jdbcType=VARCHAR},
+        ACCOUNT_SEGMENT = #{bondCategory.accountSegment,jdbcType=VARCHAR},
+        Enable_Flag=#{bondCategory.enableFlag,jdbcType=VARCHAR}
+        <if test="bondCategory.effectiveStartDate == null or bondCategory.effectiveStartDate ==''">
+            , EFFECTIVE_START_DATE = null
+        </if>
+        <if test="bondCategory.effectiveStartDate != null and bondCategory.effectiveStartDate !=''">
+            ,EFFECTIVE_START_DATE = to_date(#{bondCategory.effectiveStartDate},'yyyy-mm-dd')
+        </if>
+        <if test="bondCategory.effectiveEndDate == null or bondCategory.effectiveEndDate ==''">
+            , EFFECTIVE_END_DATE= null
+        </if>
+        <if test="bondCategory.effectiveEndDate != null and bondCategory.effectiveEndDate !=''">
+            ,EFFECTIVE_END_DATE= to_date(#{bondCategory.effectiveEndDate},'yyyy-mm-dd')
+        </if>
+        WHERE CATEGORY_ID = #{bondCategory.categoryId}
+    </update>
+
+    <!--招标方查询-->
+    <select id="getTendereeAccountList" resultType="com.cscec8b.bond.module.object.TendereeAccount">
+        select * from (select temp.*,rownum rn from(
+        select count(1) over() total,
+        t.account_id accountId,
+        t.account_name accountName,
+        t.account_short_name accountShortName,
+        t.account_person_name accountPersonName,
+        t.account_bank_number accountBankNumber,
+        t.account_bank accountBank,
+        t.BANK_TYPE bankType,
+        (select meaning
+        from stm.stm_lookup_values_v v
+        where v.lookup_type = 'CCEED_BANK_TYPE'
+        and v.status='Y'
+        AND t.BANK_TYPE=v.lookup_code )bankTypeName,
+        t.province province,
+        t.city city
+        from fdm.fdm_bond_tenderee_accounts_t t
+        <where>
+            <if test="tendereeAccount.searchValue!=null and tendereeAccount.searchValue!='' ">
+                t.account_name ||'~' || t.account_short_name ||'~' || t.account_bank
+                ||'~' || t.province ||'~' ||  t.account_bank_number  ||'~' ||  t.city LIKE
+                CONCAT(CONCAT('%',#{tendereeAccount.searchValue}),'%')
+            </if>
+        </where>
+        <if test="tendereeAccount.orderCol==null or tendereeAccount.orderCol==''  ">
+            ORDER BY t.account_name DESC
+        </if>
+        <if test="tendereeAccount.orderCol!=null and tendereeAccount.orderCol!=''">
+            ORDER BY  <![CDATA[${tendereeAccount.orderCol}]]>
+        </if>
+        <if test="tendereeAccount.orderType!=null and tendereeAccount.orderType!='' and tendereeAccount.orderCol!=null and tendereeAccount.orderCol!=''">
+            ${tendereeAccount.orderType}
+        </if>
+        <if test="tendereeAccount.orderCol!=null and tendereeAccount.orderCol!=''">
+            <if test="tendereeAccount.orderType==null or tendereeAccount.orderType==''">
+                DESC
+            </if>
+        </if>
+
+        )temp
+        )WHERE rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+
+    <!--招标方保存-->
+    <insert id="insertTendereeAccount">
+       insert into fdm.fdm_bond_tenderee_accounts_t(
+        ACCOUNT_ID,
+        ACCOUNT_NAME,
+        ACCOUNT_SHORT_NAME,
+        account_bank_number,
+        account_person_name,
+        account_bank,
+        BANK_TYPE,
+        PROVINCE,
+        CITY
+        )
+        values(
+        #{tendereeAccount.accountId,jdbcType=NUMERIC},
+        #{tendereeAccount.accountName,jdbcType=VARCHAR},
+        #{tendereeAccount.accountShortName,jdbcType=VARCHAR},
+        #{tendereeAccount.accountBankNumber,jdbcType=VARCHAR},
+        #{tendereeAccount.accountPersonName,jdbcType=VARCHAR},
+        #{tendereeAccount.accountBank,jdbcType=VARCHAR},
+        #{tendereeAccount.bankType,jdbcType=VARCHAR},
+        #{tendereeAccount.province,jdbcType=VARCHAR},
+        #{tendereeAccount.city,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <!--招标方修改-->
+    <update id="updateTendereeAccount" parameterType="com.cscec8b.bond.module.object.TendereeAccount">
+      UPDATE fdm.fdm_bond_tenderee_accounts_t
+        SET
+        ACCOUNT_NAME = #{tendereeAccount.accountName,jdbcType=VARCHAR},
+        ACCOUNT_SHORT_NAME = #{tendereeAccount.accountShortName,jdbcType=VARCHAR},
+        ACCOUNT_PERSON_NAME = #{tendereeAccount.accountPersonName,jdbcType=VARCHAR},
+        ACCOUNT_BANK_NUMBER = #{tendereeAccount.accountBankNumber,jdbcType=VARCHAR},
+        ACCOUNT_BANK= #{tendereeAccount.accountBank,jdbcType=VARCHAR},
+        BANK_TYPE=#{tendereeAccount.bankType,jdbcType=VARCHAR},
+        PROVINCE=#{tendereeAccount.province,jdbcType=VARCHAR},
+        CITY=#{tendereeAccount.city,jdbcType=VARCHAR}
+        WHERE ACCOUNT_ID = #{tendereeAccount.accountId}
+    </update>
+
+    <!--查询会计账科目分页-->
+    <select id="getAccoutSegmentList" resultType="com.cscec8b.bond.module.object.AccountSegment">
+        select * from (select temp.*,rownum rn from(
+        select count(1) over() total,
+        v.segment_code accountSegment,
+        v.segment_desc accountSegmentName
+        FROM
+        stm.stm_segment_values_v v
+        WHERE
+        v.status = 'Y'
+        AND v.SUMMARY_FLAG = 'N'
+        AND v.SEGMENT_type = 'CCEED_COA_AC'
+        <if test="accountSegment.searchValue!=null and accountSegment.searchValue!='' ">
+            AND v.SEGMENT_CODE ||'~' || v.SEGMENT_DESC LIKE CONCAT(CONCAT('%',#{accountSegment.searchValue}),'%')
+        </if>
+        )temp
+        )WHERE rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+    
+
+    <!--查询部门段分页-->
+    <select id="getSegmentValuesList" resultType="com.cscec8b.bond.module.object.SegmentValues">
+        SELECT * FROM (select temp.*,rownum rn from(
+        SELECT COUNT(1) over() total,
+        stmsegmentvaluesv.segment_code segmentCode,
+        stmsegmentvaluesv.segment_desc segmentDesc
+        FROM stm_segment_values_v stmsegmentvaluesv
+        WHERE stmsegmentvaluesv.status = 'Y'
+        AND stmsegmentvaluesv.summary_flag = 'N'
+        AND stmsegmentvaluesv.segment_type = #{segmentType}
+        <if test="segmentValues.searchValue != null and segmentValues.searchValue!='' ">
+            AND stmsegmentvaluesv.segment_code ||'~' || stmsegmentvaluesv.segment_desc LIKE
+            CONCAT(CONCAT('%',#{segmentValues.searchValue}),'%')
+        </if>
+        )temp
+        )WHERE rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+
+    <!--保证金菜单权限获取-->
+    <select id="getUserMenuList" resultType="string">
+            select function_name from (
+         select ff.function_name,
+         ff.attribute1
+         from df_fnd.fnd_functions      ff
+         WHERE ff.is_public = 'Y'
+         AND ff.attribute2 = '保证金'
+         union all
+         select ff.function_name,
+         ff.attribute1
+         from df_fnd.fnd_functions  ff,
+         df_fnd.fnd_func_auth      ffa
+         WHERE ff.is_public = 'N'
+         AND ff.attribute2 = '保证金'
+         and ffa.function_code = ff.function_code
+         and ffa.auth_object_type = 'USER'
+         and ffa.auth_object_code = #{usercode}
+         union all
+         select ff.function_name,
+         ff.attribute1
+         from df_fnd.fnd_functions  ff,
+       df_fnd.fnd_func_auth      ffa,
+       df_fnd.fnd_role_members frm,
+       df_fnd.fnd_roles fr
+         WHERE ff.is_public = 'N'
+        AND ff.attribute2 = '保证金'
+        and ffa.function_code = ff.function_code
+        and ffa.auth_object_type = 'ROLE'
+        and ffa.auth_object_code =fr.role_code
+        and fr.role_id = frm.role_id
+        and frm.text_attribute1=#{usercode}
+) v order by v.attribute1
+    </select>
+
+    <!--获取单个招标方银行账户信息-->
+    <select id="getTendereeAccount" resultType="com.cscec8b.bond.module.object.TendereeAccount">
+        select
+        t.account_id accountId,
+        t.account_name accountName,
+        t.account_short_name accountShortName,
+        t.account_person_name accountPersonName,
+        t.account_bank_number accountBankNumber,
+        t.account_bank accountBank,
+        t.BANK_TYPE  bankType,
+        t.PROVINCE province,
+        t.CITY city
+        from fdm.fdm_bond_tenderee_accounts_t t
+        <where>
+            <if test="accountName!=null and accountName!=''">
+                t.account_name =#{accountName}
+            </if>
+            <if test="accountBank!=null and accountBank!=''">
+                and t.account_bank=#{accountBank}
+            </if>
+            <if test="accountBankNumber!=null and accountBankNumber!=''">
+                and t.account_bank_number=#{accountBankNumber}
+            </if>
+            and rownum=1
+        </where>
+    </select>
+
+
+    <!--获取单个招标方银行账户信息-->
+    <select id="getAccount" resultType="com.cscec8b.bond.module.object.TendereeAccount">
+        select
+        t.account_name accountName,
+        t.account_bank_number accountBankNumber,
+        t.account_bank accountBank,
+        t.BANK_TYPE  bankType,
+        t.PROVINCE province,
+        t.CITY city
+        from  fdm.fdm_bond_org_pay_defs_t t
+        <where>
+            <if test="accountName!=null and accountName!=''">
+                t.account_name =#{accountName}
+            </if>
+            <if test="accountBank!=null and accountBank!=''">
+                and t.account_bank=#{accountBank}
+            </if>
+            <if test="accountBankNumber!=null and accountBankNumber!=''">
+                and t.account_bank_number=#{accountBankNumber}
+            </if>
+            <if test="orgId!=null and orgId!=''">
+                and t.COMPANY_ID=#{orgId}
+            </if>
+            and rownum=1
+        </where>
+    </select>
+
+    <!--获取往来段列表-->
+    <select id="getContactSegmentList" resultType="com.cscec8b.bond.module.object.Contact">
+        select * from (
+        select temp.*, rownum rn from (
+        SELECT
+        count(1) over () total,
+        ssv.segment_code contactSegmentCode,
+        ssv.segment_desc contactSegmentDesc
+        FROM stm.stm_segment_values_v ssv
+        WHERE ssv.status = 'Y'
+        AND ssv.summary_flag = 'N'
+        AND ssv.segment_type = 'CCEED_COA_IC'
+        <if test="contact.contactSegmentCode !=null and contact.contactSegmentCode !='' ">
+            and SEGMENT_CODE like CONCAT(CONCAT('%',#{contact.contactSegmentCode}),'%')
+        </if>
+        <if test="contact.contactSegmentDesc !=null and contact.contactSegmentDesc !='' ">
+            AND SEGMENT_DESC like CONCAT(CONCAT('%',#{contact.contactSegmentDesc}),'%')
+        </if>
+        <if test="contact.searchValue!=null and contact.searchValue!='' ">
+            AND SEGMENT_CODE ||'~' || SEGMENT_DESC || '~' || SEGMENT_TYPE like
+            CONCAT(CONCAT('%',#{contact.searchValue}),'%')
+        </if>
+        <if test="contact.orderCol==null or contact.orderCol==''  ">
+            ORDER BY SEGMENT_CODE
+        </if>
+        <if test="contact.orderCol!=null and contact.orderCol!=''">
+            ORDER BY  <![CDATA[${contact.orderCol}]]>
+        </if>
+        <if test="contact.orderType!=null and contact.orderType!='' and contact.orderCol!=null and contact.orderCol!=''">
+            ${contact.orderType}
+        </if>
+
+        <if test="contact.orderCol!=null and contact.orderCol!=''">
+            <if test="contact.orderType==null or contact.orderType==''">
+                DESC
+            </if>
+        </if>
+
+        ) temp
+
+        )temp2
+
+        where rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+
+    </select>
+
+</mapper>
+
+
+
+

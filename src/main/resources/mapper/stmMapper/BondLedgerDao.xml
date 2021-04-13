@@ -1,0 +1,1963 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cscec8b.bond.module.dao.BondLedgerApiDao">
+
+    <!--获取erp凭证的列表-->
+    <select id="getErpCftList" resultType="com.cscec8b.bond.module.object.ERPCft">
+        select * from (
+        select rownum rn , temp2.* from (
+        select count(1) over() total ,
+        effectiveDate,
+        ORGANIZATION_ID organizationId,
+        ORGID orgId,
+        (select sov.NAME FROM stm.stm_organizations_v sov WHERE
+        temp.ORGANIZATION_ID=sov.ORGANIZATION_ID) organizationName,
+        headerId ,
+        sourceId,
+        sourceType,
+        decode(temp.sourceType ,'BOND','申请单','CLAIM','认领单',temp.sourceType)sourceTypeName,
+        documentNumber,
+        attachmentCount,
+        erpBatchName,
+        glHeaderId,
+        to_char(glDate,'yyyy-MM-dd') glDate,
+        glBatchId,
+        status,
+        projectName,
+        applyType,
+        applyTypeName,
+        bondType,
+        bondTypeName,
+        erpDesc,
+        comments,
+        to_char(lastPushDate ,'yyyy-MM-dd') lastPushDate,
+        errorMsg
+        from (
+        select
+        to_char(beht.EFFECTIVE_DATE,'yyyy-mm-dd') effectiveDate,
+        fbrt.ORGANIZATION_ID,
+        beht.ORGANIZATION_ID ORGID,
+        beht.HEADER_ID headerId ,
+        beht.SOURCE_ID sourceId,
+        beht.SOURCE_TYPE sourceType,
+        fbrt.DOCUMENT_NUMBER documentNumber,
+        beht.ATTACHMENT_COUNT attachmentCount,
+        beht.ERP_BATCH_NAME erpBatchName,
+        beht.GL_HEADER_ID glHeaderId,
+        beht.GL_DATE glDate,
+        beht.GL_BATCH_ID glBatchId,
+        beht.STATUS status,
+        fbrt.PROJECT_NAME projectName,
+        fbrt.APPLY_TYPE applyType,
+        slv.meaning applyTypeName,
+        fbrt.BOND_TYPE bondType,
+        slva.meaning bondTypeName,
+        beht.ERP_DESC erpDesc,
+        beht.COMMENTS comments,
+        beht.LAST_PUSH_DATE lastPushDate,
+        beht.ERROR_MSG errorMsg
+        from fdm.fdm_bond_erp_header_t beht,
+        fdm.fdm_bond_reqs_t fbrt,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_APPLY_TYPE') slv,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_TYPE') slva
+        where beht.SOURCE_ID=fbrt.REQ_ID
+        and BEHT.SOURCE_TYPE = 'BOND'
+        and fbrt.APPLY_TYPE=slv.lookup_code(+)
+        and fbrt.BOND_TYPE=slva.lookup_code(+)
+        union all
+        select
+        to_char(beht.EFFECTIVE_DATE,'yyyy-mm-dd') effectiveDate,
+        fbrt.ORGANIZATION_ID,
+        beht.ORGANIZATION_ID ORGID,
+        beht.HEADER_ID headerId ,
+        beht.SOURCE_ID sourceId,
+        beht.SOURCE_TYPE sourceType,
+        bcht.DOCUMENT_NUMBER documentNumber,
+        beht.ATTACHMENT_COUNT attachmentCount,
+        beht.ERP_BATCH_NAME erpBatchName,
+        beht.GL_HEADER_ID glHeaderId,
+        beht.GL_DATE glDate,
+        beht.GL_BATCH_ID glBatchId,
+        beht.STATUS status,
+        fbrt.PROJECT_NAME projectName,
+        fbrt.APPLY_TYPE applyType,
+        slv.meaning applyTypeName,
+        fbrt.BOND_TYPE bondType,
+        slva.meaning bondTypeName,
+        beht.ERP_DESC erpDesc,
+        beht.COMMENTS comments,
+        beht.LAST_PUSH_DATE lastPushDate,
+        beht.ERROR_MSG errorMsg
+        from fdm.fdm_bond_erp_header_t beht,
+        fdm.FDM_BOND_CLAIM_HEADER_T bcht,
+        fdm.fdm_bond_reqs_t fbrt,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_APPLY_TYPE') slv,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_TYPE') slva
+        where beht.SOURCE_ID=bcht.HEADER_ID
+        and bcht.REQ_ID=fbrt.REQ_ID(+)
+        AND BEHT.SOURCE_TYPE = 'CLAIM'
+        and fbrt.APPLY_TYPE=slv.lookup_code(+)
+        and fbrt.BOND_TYPE=slva.lookup_code(+)
+        ) temp
+        <where>
+            ORGID in (
+            select SOV3.org_id organizationId
+            from stm_per_assignments_v v3, stm.stm_per_people_v spp3,
+            STM.STM_ORGANIZATIONS_V SOV3
+            where v3.person_id = spp3.PERSON_ID
+            and sov3.organization_id = v3.ORGANIZATION_ID
+            and trunc(sysdate) between spp3.EFFECTIVE_START_DATE and
+            spp3.EFFECTIVE_END_DATE
+            and trunc(sysdate) between v3.EFFECTIVE_START_DATE and
+            v3.EFFECTIVE_END_DATE
+            and spp3.EMPLOYEE_NUMBER = #{cscecUser.userCode}
+            )
+
+            <if test="erpCft.erpBatchName != null and erpCft.erpBatchName  != ''  ">
+                and erpBatchName like concat(concat('%', #{erpCft.erpBatchName}),'%')
+            </if>
+
+            <if test="erpCft.documentNumber  != null and erpCft.documentNumber  != ''  ">
+                and documentNumber like concat(concat('%', #{erpCft.documentNumber}),'%')
+            </if>
+            <if test="erpCft.projectName  != null and erpCft.projectName  != ''  ">
+                and projectName like concat(concat('%', #{erpCft.projectName}),'%')
+            </if>
+
+            <if test="erpCft.glDateFrom != null and erpCft.glDateFrom != ''  ">
+                and  <![CDATA[ glDate>= to_date( #{erpCft.glDateFrom } ,'yyyy-mm-dd') ]]>
+            </if>
+            <if test="erpCft.glDateTo != null and erpCft.glDateTo != ''  ">
+                and  <![CDATA[ glDate<= to_date(#{erpCft.glDateTo},'yyyy-mm-dd')]]>
+            </if>
+
+            <if test="erpCft.lastPushDateFrom != null and erpCft.lastPushDateFrom != ''  ">
+                and  <![CDATA[ lastPushDate>= to_date( #{erpCft.lastPushDateFrom } ,'yyyy-mm-dd') ]]>
+            </if>
+            <if test="erpCft.lastPushDateTo != null and erpCft.lastPushDateTo != ''  ">
+                and  <![CDATA[ lastPushDate<= to_date(#{erpCft.lastPushDateTo},'yyyy-mm-dd')]]>
+            </if>
+
+            <if test="erpCft.sourceType  != null and erpCft.sourceType  != ''  ">
+                and sourceType=#{erpCft.sourceType}
+            </if>
+            <if test="erpCft.applyTypeName  != null and erpCft.applyTypeName  != ''  ">
+                and applyTypeName=#{erpCft.applyTypeName}
+            </if>
+            <if test="erpCft.bondTypeName  != null and erpCft.bondTypeName  != ''  ">
+                and bondTypeName=#{erpCft.bondTypeName}
+            </if>
+            <if test="erpCft.status  != null and erpCft.status  != ''  ">
+                and status=#{erpCft.status}
+            </if>
+        </where>
+        <if test="erpCft.orderCol==null or erpCft.orderCol==''  ">
+            ORDER BY documentNumber DESC
+        </if>
+        <if test="erpCft.orderCol!=null and erpCft.orderCol!=''">
+            ORDER BY  <![CDATA[${erpCft.orderCol}]]>
+        </if>
+        <if test="erpCft.orderType!=null and erpCft.orderType!='' and erpCft.orderCol!=null and erpCft.orderCol!=''">
+            ${erpCft.orderType}
+        </if>
+        <if test="erpCft.orderCol!=null and erpCft.orderCol!=''">
+            <if test="erpCft.orderType==null or erpCft.orderType==''">
+                DESC
+            </if>
+        </if>
+
+        )temp2
+        )
+        where rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+    <update id="updateERPStatus">
+    update  fdm.fdm_bond_erp_header_t
+    set STATUS=#{erpCftDetail.status},
+        GL_DATE=to_date(#{erpCftDetail.glDate},'yyyy-MM-dd'),
+        LAST_PUSH_DATE=sysdate,
+        GROUP_ID=#{erpCftDetail.groupId,jdbcType=NUMERIC},
+        ERROR_MSG=NULL
+    where HEADER_ID=#{erpCftDetail.headerId}
+    </update>
+
+    <!--查询erp详情-->
+    <select id="getErpCftDetailByErpBatchName" resultType="com.cscec8b.bond.module.object.ERPCftDetail">
+        select * from (
+         select
+                   beht.ERP_DESC erpDesc,
+                   beht.COMMENTS Comments,
+                   to_char(beht.EFFECTIVE_DATE,'yyyy-mm-dd') effectiveDate,
+                   beht.HEADER_ID headerId ,
+                   beht.SOURCE_ID sourceId,
+                   beht.SOURCE_TYPE sourceType,
+                   fbrt.DOCUMENT_NUMBER documentNumber,
+                   beht.ATTACHMENT_COUNT attachmentCount,
+                   beht.ERP_BATCH_NAME erpBatchName,
+                   beht.GL_HEADER_ID glHeaderId,
+                   beht.GL_DATE      glDate,
+                   beht.GL_BATCH_ID glBatchId,
+                   beht.STATUS      status,
+                   fbrt.PROJECT_NAME projectName,
+                   fbrt.APPLY_TYPE applyType,
+                   slv.meaning applyTypeName,
+                   fbrt.BOND_TYPE bondType,
+                   slva.meaning bondTypeName
+                   from  fdm.fdm_bond_erp_header_t  beht,
+                           fdm.fdm_bond_reqs_t        fbrt,
+                          (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_APPLY_TYPE') slv,
+                          (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_TYPE') slva
+                    where beht.SOURCE_ID=fbrt.REQ_ID
+                     and fbrt.APPLY_TYPE=slv.lookup_code(+)
+                     and fbrt.BOND_TYPE=slva.lookup_code(+)
+
+                     union all
+
+                    select
+                   beht.ERP_DESC erpDesc,
+                   beht.COMMENTS Comments,
+                   to_char(beht.EFFECTIVE_DATE,'yyyy-mm-dd') effectiveDate,
+                   beht.HEADER_ID headerId ,
+                   beht.SOURCE_ID sourceId,
+                   beht.SOURCE_TYPE sourceType,
+                   bcht.DOCUMENT_NUMBER documentNumber,
+                   beht.ATTACHMENT_COUNT attachmentCount,
+                   beht.ERP_BATCH_NAME erpBatchName,
+                   beht.GL_HEADER_ID glHeaderId,
+                   beht.GL_DATE      glDate,
+                   beht.GL_BATCH_ID glBatchId,
+                   beht.STATUS      status,
+                   fbrt.PROJECT_NAME projectName,
+                   fbrt.APPLY_TYPE applyType,
+                   slv.meaning applyTypeName,
+                   fbrt.BOND_TYPE bondType,
+                   slva.meaning bondTypeName
+                   from  fdm.fdm_bond_erp_header_t beht,
+                     fdm.FDM_BOND_CLAIM_HEADER_T bcht,
+                     fdm.fdm_bond_reqs_t         fbrt,
+                     (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_APPLY_TYPE') slv,
+                     (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_TYPE') slva
+                     where beht.SOURCE_ID=bcht.HEADER_ID
+                     and  bcht.REQ_ID=fbrt.REQ_ID(+)
+                     and fbrt.APPLY_TYPE=slv.lookup_code(+)
+                     and fbrt.BOND_TYPE=slva.lookup_code(+)
+            )
+            where erpBatchName=#{erpBatchName}
+    </select>
+
+
+    <!--查询erp详情-->
+    <select id="getErpCftDetailByErpId" resultType="com.cscec8b.bond.module.object.ERPCftDetail">
+        select * from (
+         select   beht.ERP_DOCNUMBER erpDocNumber,
+                   beht.ERP_DESC erpDesc,
+                   beht.COMMENTS Comments,
+                   to_char(beht.EFFECTIVE_DATE,'yyyy-mm-dd') effectiveDate,
+                   beht.HEADER_ID headerId ,
+                   beht.SOURCE_ID sourceId,
+                   beht.SOURCE_TYPE sourceType,
+                   fbrt.DOCUMENT_NUMBER documentNumber,
+                   beht.ATTACHMENT_COUNT attachmentCount,
+                   beht.ERP_BATCH_NAME erpBatchName,
+                   beht.GL_HEADER_ID glHeaderId,
+                   beht.GL_DATE      glDate,
+                   beht.GL_BATCH_ID glBatchId,
+                   beht.STATUS      status,
+                   fbrt.PROJECT_NAME projectName,
+                   fbrt.APPLY_TYPE applyType,
+                   slv.meaning applyTypeName,
+                   fbrt.BOND_TYPE bondType,
+                   slva.meaning bondTypeName,
+                   beht.ERROR_MSG errorMsg
+                   from  fdm.fdm_bond_erp_header_t  beht,
+                           fdm.fdm_bond_reqs_t        fbrt,
+                          (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_APPLY_TYPE') slv,
+                          (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_TYPE') slva
+                    where beht.SOURCE_ID=fbrt.REQ_ID
+                       and beht.SOURCE_TYPE='BOND'
+                     and fbrt.APPLY_TYPE=slv.lookup_code(+)
+                     and fbrt.BOND_TYPE=slva.lookup_code(+)
+
+                     union all
+
+                    select
+                    beht.ERP_DOCNUMBER erpDocNumber,
+                   beht.ERP_DESC erpDesc,
+                   beht.COMMENTS Comments,
+                   to_char(beht.EFFECTIVE_DATE,'yyyy-mm-dd') effectiveDate,
+                   beht.HEADER_ID headerId ,
+                   beht.SOURCE_ID sourceId,
+                   beht.SOURCE_TYPE sourceType,
+                   bcht.DOCUMENT_NUMBER documentNumber,
+                   beht.ATTACHMENT_COUNT attachmentCount,
+                   beht.ERP_BATCH_NAME erpBatchName,
+                   beht.GL_HEADER_ID glHeaderId,
+                   beht.GL_DATE      glDate,
+                   beht.GL_BATCH_ID glBatchId,
+                   beht.STATUS      status,
+                   fbrt.PROJECT_NAME projectName,
+                   fbrt.APPLY_TYPE applyType,
+                   slv.meaning applyTypeName,
+                   fbrt.BOND_TYPE bondType,
+                   slva.meaning bondTypeName,
+                   beht.ERROR_MSG errorMsg
+                   from  fdm.fdm_bond_erp_header_t beht,
+                     fdm.FDM_BOND_CLAIM_HEADER_T bcht,
+                     fdm.fdm_bond_reqs_t         fbrt,
+                     (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_APPLY_TYPE') slv,
+                     (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_TYPE') slva
+                     where beht.SOURCE_ID=bcht.HEADER_ID
+                        and beht.SOURCE_TYPE='CLAIM'
+                     and  bcht.REQ_ID=fbrt.REQ_ID(+)
+                     and fbrt.APPLY_TYPE=slv.lookup_code(+)
+                     and fbrt.BOND_TYPE=slva.lookup_code(+)
+            )
+            where headerId=#{headerId}
+    </select>
+
+    <!--获取erp行信息-->
+    <select id="getErpLineListByHeaderId" resultType="com.cscec8b.bond.module.object.ErpLine">
+         select
+          t.LINE_ID lineId,
+          t.HEADER_ID headerId,
+          t. LINE_NUM lineNum,
+          t. ACCOUNT_SEGMENT accountSegment,
+          cast(t.DEBET_AMOUNT as decimal(10,2)) debetAmount,
+          cast(t.CREDIT_AMOUNT as decimal(10,2)) creditAmount,
+          t. LINE_DESC lineDesc,
+          t.ACCOUNT_SEGMENT_DESC accountSegmentDesc
+          from fdm.fdm_bond_erp_lines_t t
+          where t.HEADER_ID=#{headerId}
+          order by lineNum
+    </select>
+
+    <!--获取erpline-->
+    <select id="getSimpleErpLineListByHeaderId" resultType="com.cscec8b.bond.module.object.ErpLine">
+        select
+          t.LINE_ID lineId,
+          t.HEADER_ID headerId,
+          t. LINE_NUM lineNum,
+          t. ACCOUNT_SEGMENT accountSegment,
+          cast(t.DEBET_AMOUNT as decimal(10,2)) debetAmount,
+          cast(t.CREDIT_AMOUNT as decimal(10,2)) creditAmount,
+          t. LINE_DESC lineDesc,
+          t.ACCOUNT_SEGMENT_DESC accountSegmentDesc
+          from fdm.fdm_bond_erp_lines_t t
+          where t.HEADER_ID=#{headerId}
+          order by lineNum
+
+    </select>
+    <!--获取erp详情-->
+    <select id="getErpCftDetailHeaderId" resultType="com.cscec8b.bond.module.object.ERPCftDetail">
+         select * from (
+         select    beht.ORGANIZATION_ID orgnazationId,
+                   to_char(beht.EFFECTIVE_DATE,'yyyy-mm-dd') effectiveDate,
+                   beht.HEADER_ID headerId ,
+                   beht.SOURCE_ID sourceId,
+                   beht.SOURCE_TYPE sourceType,
+                   fbrt.DOCUMENT_NUMBER documentNumber,
+                   beht.ATTACHMENT_COUNT attachmentCount,
+                   beht.ERP_BATCH_NAME erpBatchName,
+                   beht.GL_HEADER_ID glHeaderId,
+                   beht.GL_DATE      glDate,
+                   beht.GL_BATCH_ID glBatchId,
+                   beht.STATUS      status,
+                   fbrt.PROJECT_NAME projectName,
+                   fbrt.APPLY_TYPE applyType,
+                   slv.meaning applyTypeName,
+                   fbrt.BOND_TYPE bondType,
+                   slva.meaning bondTypeName
+                   from  fdm.fdm_bond_erp_header_t  beht,
+                           fdm.fdm_bond_reqs_t        fbrt,
+                          (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_APPLY_TYPE') slv,
+                          (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_TYPE') slva
+                    where beht.SOURCE_ID=fbrt.REQ_ID
+                    and beht.SOURCE_TYPE='BOND'
+                     and fbrt.APPLY_TYPE=slv.lookup_code(+)
+                     and fbrt.BOND_TYPE=slva.lookup_code(+)
+
+                     union all
+
+                    select
+                   beht.ORGANIZATION_ID orgnazationId,
+                   to_char(beht.EFFECTIVE_DATE,'yyyy-mm-dd') effectiveDate,
+                   beht.HEADER_ID headerId ,
+                   beht.SOURCE_ID sourceId,
+                   beht.SOURCE_TYPE sourceType,
+                   bcht.DOCUMENT_NUMBER documentNumber,
+                   beht.ATTACHMENT_COUNT attachmentCount,
+                   beht.ERP_BATCH_NAME erpBatchName,
+                   beht.GL_HEADER_ID glHeaderId,
+                   beht.GL_DATE      glDate,
+                   beht.GL_BATCH_ID glBatchId,
+                   beht.STATUS      status,
+                   fbrt.PROJECT_NAME projectName,
+                   fbrt.APPLY_TYPE applyType,
+                   slv.meaning applyTypeName,
+                   fbrt.BOND_TYPE bondType,
+                   slva.meaning bondTypeName
+                   from  fdm.fdm_bond_erp_header_t beht,
+                     fdm.FDM_BOND_CLAIM_HEADER_T bcht,
+                     fdm.fdm_bond_reqs_t         fbrt,
+                     (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_APPLY_TYPE') slv,
+                     (select lookup_code,meaning from stm.stm_lookup_values_t where
+                          lookup_type='FDM_BOND_TYPE') slva
+                     where beht.SOURCE_ID=bcht.HEADER_ID
+                     and beht.SOURCE_TYPE='CLAIM'
+                     and  bcht.REQ_ID=fbrt.REQ_ID(+)
+                     and fbrt.APPLY_TYPE=slv.lookup_code(+)
+                     and fbrt.BOND_TYPE=slva.lookup_code(+)
+            )
+            where headerId=#{headerId}
+</select>
+
+    <!--CBS记录查询-->
+    <select id="getCBSPayMentList" resultType="com.cscec8b.bond.module.object.CBSPayMent">
+        SELECT * from (
+        select temp.*, rownum rn from (
+        SELECT count(1) over() total,
+        cbsPaymentId,
+        sourceId,
+        ORGANIZATION_ID,
+        bankSeqNumber,
+        documentNumber,
+        DECODE(sourceType, 'BOND','申请单','认领单') sourceTypeName,
+        pushStatus,
+        errorMsg,
+        projectName,
+        to_char(lastPushDate, 'yyyy-mm-dd') lastPushDate,
+        applyTypeName,
+        bondTypeName,
+        payBankNumber,
+        accountBankName,
+        accountBankNumber,
+        accountName,
+        payAmount,
+        payDesc,
+        applyType,
+        bondType,
+        payType,
+        creationDate,
+        orgId
+        from ( select t.payment_id cbsPaymentId,
+        t.source_id sourceId,
+        fbr.ORGANIZATION_ID,
+        t.bank_seq_number bankSeqNumber,
+        c.document_number documentNumber,
+        t.SOURCE_TYPE sourceType,
+        t.status pushStatus,
+        t.err_msg errorMsg,
+        fbr.project_name projectName,
+        t.last_push_date lastPushDate,
+        slv.meaning applyTypeName,
+        slva.meaning bondTypeName,
+        t.pay_bank_number payBankNumber,
+        t.account_bank_name accountBankName,
+        t.account_bank_number accountBankNumber,
+        t.account_name accountName,
+        t.pay_amount payAmount,
+        t.pay_usage payDesc,
+        fbr.apply_type applyType,
+        fbr.bond_type bondType,
+        fbr.PAY_TYPE payType,
+        t.creation_date creationDate,
+        t.ORGANIZATION_ID orgId
+        FROM fdm.fdm_bond_cbs_payments_t t,
+        fdm.FDM_BOND_CLAIM_HEADER_T c,
+        fdm.fdm_bond_reqs_t fbr,
+        (select lookup_code, meaning
+        from stm.stm_lookup_values_t
+        where lookup_type ='FDM_BOND_APPLY_TYPE') slv,
+        (select lookup_code, meaning
+        from stm.stm_lookup_values_t
+        where lookup_type = 'FDM_BOND_TYPE') slva
+        WHERE t.source_id = c.header_id
+        AND C.REQ_ID = FBR.REQ_ID
+        AND T.SOURCE_TYPE = 'CLAIM'
+        AND fbr.apply_type = slv.lookup_code(+)
+        AND fbr.bond_type = slva.lookup_code(+)
+
+        UNION
+
+        select t.payment_id cbsPaymentId,
+        t.source_id sourceId,
+        fbr.ORGANIZATION_ID,
+        t.bank_seq_number bankSeqNumber,
+        FBR.document_number documentNumber,
+        t.SOURCE_TYPE sourceType,
+        t.status pushStatus,
+        t.err_msg errorMsg,
+        fbr.project_name projectName,
+        t.last_push_date lastPushDate,
+        slv.meaning applyTypeName,
+        slva.meaning bondTypeName,
+        t.pay_bank_number payBankNumber,
+        t.account_bank_name accountBankName,
+        t.account_bank_number accountBankNumber,
+        t.account_name accountName,
+        t.pay_amount payAmount,
+        t.pay_usage payDesc,
+        fbr.apply_type applyType,
+        fbr.bond_type bondType,
+        fbr.PAY_TYPE payType,
+        t.creation_date creationDate,
+        t.ORGANIZATION_ID orgId
+        FROM fdm.fdm_bond_cbs_payments_t t,
+        fdm.fdm_bond_reqs_t fbr,
+        (select lookup_code, meaning from stm.stm_lookup_values_t where lookup_type ='FDM_BOND_APPLY_TYPE') slv,
+        (select lookup_code, meaning from stm.stm_lookup_values_t where lookup_type = 'FDM_BOND_TYPE') slva
+        WHERE t.source_id = fbr.req_id
+        AND T.SOURCE_TYPE = 'BOND'
+        AND fbr.apply_type = slv.lookup_code(+)
+        AND fbr.bond_type = slva.lookup_code(+)
+        )tem
+        where orgId IN (
+        SELECT DISTINCT V.organization_id_child organizationId
+        FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+        STM.STM_ORGANIZATIONS_V SOV
+        WHERE SOV.organization_id = V.organization_id_child
+        AND SOV.TYPE = 'CCEED5'
+        AND v.org_structure_version_id = 4061
+        CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+        START WITH v.organization_id_parent IN
+        (select sov1.org_id
+        from stm_per_assignments_v v1,
+        stm.stm_per_people_v spp1,
+        stm_organizations_v sov1
+        where v1.person_id = spp1.PERSON_ID
+        and sov1.org_id != 102
+        and sov1.organization_id = v1.ORGANIZATION_ID
+        and trunc(sysdate) between spp1.EFFECTIVE_START_DATE and
+        spp1.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v1.EFFECTIVE_START_DATE and
+        v1.EFFECTIVE_END_DATE
+        AND spp1.EMPLOYEE_NUMBER =#{cscecUser.userCode})
+        UNION
+        select SOV3.org_id organizationId
+        from stm_per_assignments_v v3, stm.stm_per_people_v spp3,
+        STM.STM_ORGANIZATIONS_V SOV3
+        where v3.person_id = spp3.PERSON_ID
+        and sov3.organization_id = v3.ORGANIZATION_ID
+        and trunc(sysdate) between spp3.EFFECTIVE_START_DATE and
+        spp3.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v3.EFFECTIVE_START_DATE and
+        v3.EFFECTIVE_END_DATE
+        and spp3.EMPLOYEE_NUMBER = #{cscecUser.userCode}
+        )
+        <if test="cbspayMent.bankSeqNumber != null and cbspayMent.bankSeqNumber !='' ">
+            AND bankSeqNumber LIKE concat(concat('%',#{cbspayMent.bankSeqNumber}),'%')
+        </if>
+        <if test="cbspayMent.documentNumber != null and cbspayMent.documentNumber !=''">
+            and documentNumber like concat(concat('%', #{cbspayMent.documentNumber}),'%')
+        </if>
+        <if test="cbspayMent.projectName != null and cbspayMent.projectName !=''">
+            AND projectName LIKE concat(concat('%',#{cbspayMent.projectName}),'%')
+        </if>
+        <if test="cbspayMent.sourceType != null and cbspayMent.sourceType !=''">
+            AND sourceType=#{cbspayMent.sourceType}
+        </if>
+        <if test="cbspayMent.pushStatus != null and cbspayMent.pushStatus !=''">
+            AND pushStatus=#{cbspayMent.pushStatus}
+        </if>
+        <if test="cbspayMent.lastPushDateFrom != null and cbspayMent.lastPushDateFrom !=''">
+            AND <![CDATA[ lastPushDate > = to_date(#{cbspayMent.lastPushDateFrom},'yyyy-mm-dd') ]]>
+        </if>
+        <if test="cbspayMent.lastPushDateTo != null and cbspayMent.lastPushDateTo !=''">
+            AND <![CDATA[ lastPushDate < = to_date(#{cbspayMent.lastPushDateTo},'yyyy-mm-dd') ]]>
+        </if>
+        <if test="cbspayMent.bondType != null and cbspayMent.bondType !=''">
+            AND bondType=#{cbspayMent.bondType}
+        </if>
+        <if test="cbspayMent.applyType != null and cbspayMent.applyType !=''">
+            AND applyType=#{cbspayMent.applyType}
+        </if>
+
+        <if test="cbspayMent.orderCol==null or cbspayMent.orderCol==''">
+            ORDER BY creationDate DESC
+        </if>
+        <if test="cbspayMent.orderCol!=null and cbspayMent.orderCol!=''">
+            ORDER BY  <![CDATA[${cbspayMent.orderCol}]]>
+        </if>
+        <if test="cbspayMent.orderType!=null and cbspayMent.orderType!='' and cbspayMent.orderCol!=null and cbspayMent.orderCol!=''">
+            ${cbspayMent.orderType}
+        </if>
+        <if test="cbspayMent.orderCol!=null and cbspayMent.orderCol!=''">
+            <if test="cbspayMent.orderType==null or cbspayMent.orderType==''">
+                DESC
+            </if>
+        </if>
+        )temp
+        )WHERE rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+
+    <!--CBS记录重传-->
+    <select id="getCbspayMentListCbsPaymentId" resultType="com.cscec8b.bond.module.object.CBSPayMent">
+      SELECT
+       bank_type  bankType ,
+       province  province,
+       city  city,
+       orgId,
+       cbsPaymentId,
+       sourceId,
+       ORGANIZATION_ID,
+       bankSeqNumber,
+       documentNumber,
+       pushStatus,
+       errorMsg,
+       projectName,
+       to_char(lastPushDate, 'yyyy-mm-dd') lastPushDate,
+       applyTypeName,
+       bondTypeName,
+       payBankNumber,
+       accountBankName,
+       accountBankNumber,
+       accountName,
+       payAmount,
+       payDesc,
+       applyType,
+       bondType,
+       payType
+  from (
+             select
+             t.bank_type ,
+             t.province ,
+             t.city ,
+              t.ORGANIZATION_ID  orgId,
+              t.payment_id          cbsPaymentId,
+               t.source_id           sourceId,
+               fbr.ORGANIZATION_ID,
+               t.bank_seq_number     bankSeqNumber,
+               c.document_number     documentNumber,
+               t.status              pushStatus,
+               t.err_msg             errorMsg,
+               fbr.project_name      projectName,
+               t.last_push_date      lastPushDate,
+               slv.meaning           applyTypeName,
+               slva.meaning          bondTypeName,
+               t.pay_bank_number     payBankNumber,
+               t.account_bank_name   accountBankName,
+               t.account_bank_number accountBankNumber,
+               t.account_name        accountName,
+               t.pay_amount          payAmount,
+               t.pay_usage           payDesc,
+               fbr.apply_type        applyType,
+               fbr.bond_type         bondType,
+               fbr.PAY_TYPE payType
+          FROM fdm.fdm_bond_cbs_payments_t t,
+               fdm.FDM_BOND_CLAIM_HEADER_T c,
+               fdm.fdm_bond_reqs_t fbr,
+               (select lookup_code, meaning
+                  from stm.stm_lookup_values_t
+                 where lookup_type = 'FDM_BOND_APPLY_TYPE') slv,
+               (select lookup_code, meaning
+                  from stm.stm_lookup_values_t
+                 where lookup_type = 'FDM_BOND_TYPE') slva
+         WHERE t.source_id = c.header_id
+           AND C.REQ_ID = FBR.REQ_ID
+           AND T.SOURCE_TYPE = 'CLAIM'
+           AND fbr.apply_type = slv.lookup_code(+)
+           AND fbr.bond_type = slva.lookup_code(+)
+          AND T.PAYMENT_ID = #{cbsPaymentId}
+        UNION
+        select
+              t.bank_type ,
+              t.province ,
+              t.city ,
+              t.ORGANIZATION_ID  orgId,
+              t.payment_id          cbsPaymentId,
+               t.source_id           sourceId,
+               fbr.ORGANIZATION_ID,
+               t.bank_seq_number     bankSeqNumber,
+               FBR.document_number   documentNumber,
+               t.status              pushStatus,
+               t.err_msg             errorMsg,
+               fbr.project_name      projectName,
+               t.last_push_date      lastPushDate,
+               slv.meaning           applyTypeName,
+               slva.meaning          bondTypeName,
+               t.pay_bank_number     payBankNumber,
+               t.account_bank_name   accountBankName,
+               t.account_bank_number accountBankNumber,
+               t.account_name        accountName,
+               t.pay_amount          payAmount,
+               t.pay_usage           payDesc,
+               fbr.apply_type        applyType,
+               fbr.bond_type         bondType,
+                fbr.PAY_TYPE payType
+          FROM fdm.fdm_bond_cbs_payments_t t,
+               fdm.fdm_bond_reqs_t fbr,
+               (select lookup_code, meaning
+                  from stm.stm_lookup_values_t
+                 where lookup_type = 'FDM_BOND_APPLY_TYPE') slv,
+               (select lookup_code, meaning
+                  from stm.stm_lookup_values_t
+                 where lookup_type = 'FDM_BOND_TYPE') slva
+         WHERE t.source_id = fbr.req_id
+           AND T.SOURCE_TYPE = 'BOND'
+           AND fbr.apply_type = slv.lookup_code(+)
+           AND fbr.bond_type = slva.lookup_code(+)
+           AND T.PAYMENT_ID = #{cbsPaymentId}
+           )
+    </select>
+
+    <!--CBS重传修改-->
+    <update id="updateCbsPaymentId" parameterType="com.cscec8b.bond.module.object.CBSPayMent">
+        update fdm.fdm_bond_cbs_payments_t t
+        set t.status='推送中',
+            t.last_push_date=sysdate ,
+             t.err_msg=''
+        where t.payment_id = #{cbsPaymentId}
+    </update>
+    <update id="updateCbsPaymentStatus" parameterType="com.cscec8b.bond.module.object.CBSPayMent">
+        update fdm.fdm_bond_cbs_payments_t t
+        set t.status='推送成功',
+            t.last_push_date=sysdate ,
+             t.err_msg=''
+        where t.payment_id = #{cbsPaymentId}
+    </update>
+
+
+    <select id="getBondTallyList" resultType="com.cscec8b.bond.module.object.BondTallyDetail">
+        select
+        *
+        from (
+        select temp.* ,rownum rn from (
+        select count(1) over() total, m.* from (
+        select
+        brt. reqId,
+        brt. reqDocumentNumber,
+        brt. organizationId,
+        brt. organizationName,
+        brt. applyType,
+        brt. applyTypeName,
+        brt. projectName,
+        brt. bondType,
+        brt. bondTypeName,
+        brt. financeHandler,
+        brt. financeHandlerName,
+        brt. marketHandler,
+        brt. marketHandlerName,
+        to_char(brt.repaymentDate,'yyyy-MM-dd')repaymentDate,
+        brt. payAmount,
+        to_char(brt.payDate,'yyyy-MM-dd')payDate,
+        brt. payDesc,
+        brt. payUsage,
+        brt. tendereeAccountName,
+        brt. tendereeAccountBankName,
+        brt. tendereeAccountBankNumber,
+        brt. reqPreparedBy,
+        brt. reqPreparedByName,
+        to_char(brt.rePreparedDate,'yyyy-MM-dd') rePreparedDate,
+        brt. documentStatus,
+        brt.lastUpdateDate,
+        brt.payType,
+        bcht.headerId,
+        bcht.documentNumber ,
+        to_char(bcht.preparedDate,'yyyy-MM-dd') preparedDate,
+        bcht.preparedBy,
+        bcht.preparedByName,
+        bcht.claimAmount,
+        bcht.claimStatus,
+        bcht.repaymentTenderee,
+        bcht.repaymentBankNumber,
+        to_char(bcht.claimDate,'yyyy-MM-dd') claimDate,
+
+        decode( bcht.claimStatus,null,floor(to_number(sysdate-brt.repaymentDate)
+        ),floor(to_number(bcht.claimDate-brt.repaymentDate) ))overDays,
+
+        decode( bcht.claimStatus,null,0-brt.payAmount,bcht.claimAmount-brt.payAmount) balance
+
+        ,
+        brt.CbsPayNumber,
+        brt.PROJECT_PAY_TYPE projectPayType,
+        concat(brt.ecdsPayRate,'%') as ecdsPayRate,
+        brt.PROGRESS_PAY_TYPE progressPayType,
+        concat(brt.progressPayRate,'%') as progressPayRate
+        from
+        (
+        select
+        t.REQ_ID reqId ,
+
+
+        (select BANK_SEQ_NUMBER
+        from fdm.fdm_bond_cbs_payments_t v
+        where v.SOURCE_ID = t.REQ_ID
+        and SOURCE_TYPE = 'BOND'
+        and REQ_NODE= decode( t.APPLY_TYPE,'BUREAU_AGENT','局总部付款','NOT_BUREAU_AGENT','二级单位付款',t.APPLY_TYPE)
+        and status='推送成功'
+        and rownum =1
+        ) CbsPayNumber,
+
+
+        t.DOCUMENT_NUMBER reqDocumentNumber,
+        t.ORGANIZATION_ID organizationId,
+        sov.NAME organizationName,
+        t.APPLY_TYPE applyType,
+        slv.meaning applyTypeName,
+        t.PROJECT_NAME projectName,
+        t.BOND_TYPE bondType,
+        slva.meaning bondTypeName,
+        t.FINANCE_HANDLER financeHandler,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.FINANCE_HANDLER=v.EMPLOYEE_ID) financeHandlerName,
+        t.MARKET_HANDLER marketHandler,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.MARKET_HANDLER=v.EMPLOYEE_ID) marketHandlerName,
+        t.PROJECT_BOND_AMOUNT projectBondAmount,
+        t.REPAYMENT_DATE repaymentDate,
+        t.CONTRACT_AMOUNT contractAmount,
+        t.OTHER_DUTY otherDuty,
+        t.PAY_AMOUNT payAmount,
+        t.PAY_DATE payDate,
+        t.PAY_DESC payDesc,
+        t.PAY_USAGE payUsage,
+        t.PAY_DUTY payDuty,
+        t.OTHER_DESC otherDesc,
+        t.TENDEREE_ACCOUNT_NAME tendereeAccountName,
+        t.TENDEREE_ACCOUNT_BANK_NAME tendereeAccountBankName,
+        t.TENDEREE_ACCOUNT_BANK_NUMBER tendereeAccountBankNumber,
+        t.FINACING_FLAG,
+        t.FINACING_DUTY_FLAG,
+        t.DEL_FUND_FLAG,
+        t.LOAN_FLAG,
+        t.MORTGAGE_FLAG,
+        t.PROJECT_PAY_TYPE,
+        nvl(t.ECDS_PAY_RATE,0) as ecdsPayRate ,
+        t.PROGRESS_PAY_TYPE,
+        nvl(t.PROGRESS_PAY_RATE,0) as progressPayRate,
+        t.PREPARED_BY reqPreparedBy ,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.PREPARED_BY =v.EMPLOYEE_ID) reqPreparedByName,
+        t.PREPARED_DATE rePreparedDate,
+        t.STATUS documentStatus,
+        t.INVEST_FLAG,
+        t.COMMENTS comments,
+        t.LAST_UPDATE_DATE lastUpdateDate,
+        t.PAY_TYPE payType
+
+        from fdm.fdm_bond_reqs_t t,
+        stm.stm_organizations_v sov,
+
+        (select lookup_code,meaning from stm.stm_lookup_values_t
+        where lookup_type='FDM_BOND_APPLY_TYPE') slv,
+
+        (select lookup_code,meaning from stm.stm_lookup_values_t
+        where lookup_type='FDM_BOND_TYPE') slva
+
+
+        where
+        <if test="orgId=='102'.toString()">
+            t.status='APPROVED'
+        </if>
+        <if test="orgId!=102">
+            t.status in ('SUBMITED','APPROVED')
+        </if>
+        and t.ORGANIZATION_ID=sov.ORGANIZATION_ID(+)
+        and t.bond_type=slva.lookup_code(+)
+        and t.apply_type=slv.lookup_code(+)
+        ) brt,
+        (select
+        ht. HEADER_ID headerId,
+        ht. DOCUMENT_NUMBER documentNumber,
+        ht.REQ_ID reqId,
+        ht.PREPARED_DATE preparedDate,
+        ht.PREPARED_BY preparedBy,
+        (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where ht.PREPARED_BY=v.EMPLOYEE_ID ) preparedByName,
+        ht. CLAIM_AMOUNT claimAmount,
+        ht. STATUS claimStatus,
+        ht.REPAYMENT_TENDEREE repaymentTenderee,
+        ht. REPAYMENT_BANK_NUMBER repaymentBankNumber,
+        ht. CLAIM_DATE claimDate
+
+        from
+        fdm.FDM_BOND_CLAIM_HEADER_T ht
+
+        where ht.STATUS in('SUBMITED','APPROVED')
+
+
+        ) bcht
+
+        where brt.reqId=bcht.reqId(+)
+
+        and organizationId in (
+        SELECT DISTINCT V.organization_id_child organizationId
+        FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+        STM.STM_ORGANIZATIONS_V SOV
+        WHERE SOV.organization_id = V.organization_id_child
+        AND SOV.TYPE = 'CCEED5'
+        AND v.org_structure_version_id = 4061
+        CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+        START WITH v.organization_id_parent IN
+        (select sov1.org_id
+
+        from stm_per_assignments_v v1,
+        stm.stm_per_people_v spp1,
+        stm_organizations_v sov1
+        where v1.person_id = spp1.PERSON_ID
+        and sov1.organization_id = v1.ORGANIZATION_ID
+        and trunc(sysdate) between spp1.EFFECTIVE_START_DATE and
+        spp1.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v1.EFFECTIVE_START_DATE and
+        v1.EFFECTIVE_END_DATE
+        AND spp1.EMPLOYEE_NUMBER =#{cscecUser.userCode})
+
+        UNION
+
+        select SOV3.org_id organizationId
+        from stm_per_assignments_v v3, stm.stm_per_people_v spp3,
+        STM.STM_ORGANIZATIONS_V SOV3
+        where v3.person_id = spp3.PERSON_ID
+        and sov3.organization_id = v3.ORGANIZATION_ID
+        and trunc(sysdate) between spp3.EFFECTIVE_START_DATE and
+        spp3.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v3.EFFECTIVE_START_DATE and
+        v3.EFFECTIVE_END_DATE
+        and spp3.EMPLOYEE_NUMBER = #{cscecUser.userCode}
+        )
+
+        ) m
+        <where>
+
+            <if test="bondTally.documentNumber!=null and bondTally.documentNumber!='' ">
+                and documentNumber like concat(concat('%', #{bondTally.documentNumber}),'%')
+            </if>
+            <if test="bondTally.reqDocumentNumber!=null and bondTally.reqDocumentNumber!='' ">
+                and reqDocumentNumber like concat(concat('%', #{bondTally.reqDocumentNumber}),'%')
+            </if>
+            <if test="bondTally.applyTypeName!=null and bondTally.applyTypeName!='' ">
+                and applyTypeName=#{bondTally.applyTypeName}
+            </if>
+
+            <if test="bondTally.documentStatus!=null and bondTally.documentStatus!='' ">
+                and documentStatus=#{bondTally.documentStatus}
+            </if>
+
+            <if test="bondTally.applyType!=null and bondTally.applyType!='' ">
+                and applyType=#{bondTally.applyType}
+            </if>
+
+            <if test="bondTally.isOverdue=='Y'.toString() ">
+                and overDays>0
+            </if>
+            <if test="bondTally.isOverdue=='N'.toString() ">
+                and overDays&lt;=0
+            </if>
+
+            <if test="bondTally.claimStatus!=null and bondTally.claimStatus!='' ">
+                <if test="bondTally.claimStatus=='NOAPPROVED'.toString()">
+                    AND claimStatus IS NULL
+                </if>
+                <if test="bondTally.claimStatus!='NOAPPROVED'">
+                    AND claimStatus =#{bondTally.claimStatus}
+                </if>
+            </if>
+
+
+            <if test="bondTally.bondTypeName!=null and bondTally.bondTypeName!='' ">
+                and bondTypeName=#{bondTally.bondTypeName}
+            </if>
+            <if test="bondTally.bondType!=null and bondTally.bondType!='' ">
+                and bondType=#{bondTally.bondType}
+            </if>
+            <if test="bondTally.organizationName  != null and bondTally.organizationName  != ''  ">
+                and organizationName=#{bondTally.organizationName}
+            </if>
+
+
+            <if test="bondTally.organizationId != null and bondTally.organizationId != ''">
+                <if test="containChild==true ">
+                    and organizationId in
+                    (SELECT DISTINCT V.organization_id_child organizationId
+                    FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+                    STM.STM_ORGANIZATIONS_V SOV
+                    WHERE SOV.organization_id = V.organization_id_child
+                    AND SOV.TYPE = 'CCEED5'
+                    AND v.org_structure_version_id = 4061
+                    CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+                    START WITH v.organization_id_parent =#{bondTally.organizationId}
+                    union
+                    select #{bondTally.organizationId} organizationId from dual
+                    )
+                </if>
+                <if test="containChild==false">
+                    and organizationId=#{bondTally.organizationId}
+                </if>
+            </if>
+
+
+            <if test="bondTally.projectName  != null and bondTally.projectName  != ''  ">
+                and projectName like concat(concat('%', #{bondTally.projectName}),'%')
+            </if>
+            <if test="bondTally.financeHandlerName  != null and bondTally.financeHandlerName  != ''  ">
+                and financeHandlerName=#{bondTally.financeHandlerName}
+            </if>
+            <if test="bondTally.marketHandlerName  != null and bondTally.marketHandlerName  != ''  ">
+                and marketHandlerName=#{bondTally.marketHandlerName}
+            </if>
+        </where>
+        <if test="bondTally.orderCol==null or bondTally.orderCol==''  ">
+            ORDER BY lastUpdateDate DESC
+        </if>
+        <if test="bondTally.orderCol!=null and bondTally.orderCol!=''">
+            ORDER BY  <![CDATA[${bondTally.orderCol}]]>
+        </if>
+        <if test="bondTally.orderType!=null and bondTally.orderType!='' and bondTally.orderCol!=null and bondTally.orderCol!=''">
+            ${bondTally.orderType}
+        </if>
+        <if test="bondTally.orderCol!=null and bondTally.orderCol!=''">
+            <if test="bondTally.orderType==null or bondTally.orderType==''">
+                DESC
+            </if>
+        </if>
+
+
+        )temp
+        )
+        where rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+
+
+    <select id="getBalance" resultType="Double">
+        select sum(balance) from (
+
+        select temp.* ,rownum rn from (
+        select count(1) over() total, m.* from (
+        select
+        brt. reqId,
+        brt. reqDocumentNumber,
+        brt. organizationId,
+        brt. organizationName,
+        brt. applyType,
+        brt. applyTypeName,
+        brt. projectName,
+        brt. bondType,
+        brt. bondTypeName,
+        brt. financeHandler,
+        brt. financeHandlerName,
+        brt. marketHandler,
+        brt. marketHandlerName,
+        to_char(brt.repaymentDate,'yyyy-MM-dd')repaymentDate,
+        brt. payAmount,
+        to_char(brt.payDate,'yyyy-MM-dd')payDate,
+        brt. payDesc,
+        brt. payUsage,
+        brt. tendereeAccountName,
+        brt. tendereeAccountBankName,
+        brt. tendereeAccountBankNumber,
+        brt. reqPreparedBy,
+        brt. reqPreparedByName,
+        to_char(brt.rePreparedDate,'yyyy-MM-dd') rePreparedDate,
+        brt. documentStatus,
+        brt.lastUpdateDate,
+
+        bcht.headerId,
+        bcht.documentNumber ,
+        to_char(bcht.preparedDate,'yyyy-MM-dd') preparedDate,
+        bcht.preparedBy,
+        bcht.preparedByName,
+        bcht.claimAmount,
+        bcht.claimStatus,
+        bcht.repaymentTenderee,
+        bcht.repaymentBankNumber,
+        to_char(bcht.claimDate,'yyyy-MM-dd') claimDate,
+
+        decode( bcht.claimStatus,null,floor(to_number(sysdate-brt.repaymentDate)
+        ),floor(to_number(bcht.claimDate-brt.repaymentDate) ))overDays,
+
+        decode( bcht.claimStatus,null,0-brt.payAmount,bcht.claimAmount-brt.payAmount) balance
+
+        ,
+        brt.CbsPayNumber
+        from
+        (
+        select
+        t.REQ_ID reqId ,
+
+
+        (select BANK_SEQ_NUMBER
+        from fdm.fdm_bond_cbs_payments_t v
+        where v.SOURCE_ID = t.REQ_ID
+        and SOURCE_TYPE = 'BOND'
+        and REQ_NODE= decode( t.APPLY_TYPE,'BUREAU_AGENT','局总部付款','NOT_BUREAU_AGENT','二级单位付款',t.APPLY_TYPE)
+        and status='推送成功'
+        and rownum =1
+        ) CbsPayNumber,
+
+
+        t.DOCUMENT_NUMBER reqDocumentNumber,
+        t.ORGANIZATION_ID organizationId,
+        sov.NAME organizationName,
+        t.APPLY_TYPE applyType,
+        slv.meaning applyTypeName,
+        t.PROJECT_NAME projectName,
+        t.BOND_TYPE bondType,
+        slva.meaning bondTypeName,
+        t.FINANCE_HANDLER financeHandler,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.FINANCE_HANDLER=v.EMPLOYEE_ID) financeHandlerName,
+        t.MARKET_HANDLER marketHandler,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.MARKET_HANDLER=v.EMPLOYEE_ID) marketHandlerName,
+        t.PROJECT_BOND_AMOUNT projectBondAmount,
+        t.REPAYMENT_DATE repaymentDate,
+        t.CONTRACT_AMOUNT contractAmount,
+        t.OTHER_DUTY otherDuty,
+        t.PAY_AMOUNT payAmount,
+        t.PAY_DATE payDate,
+        t.PAY_DESC payDesc,
+        t.PAY_USAGE payUsage,
+        t.PAY_DUTY payDuty,
+        t.OTHER_DESC otherDesc,
+        t.TENDEREE_ACCOUNT_NAME tendereeAccountName,
+        t.TENDEREE_ACCOUNT_BANK_NAME tendereeAccountBankName,
+        t.TENDEREE_ACCOUNT_BANK_NUMBER tendereeAccountBankNumber,
+        t.FINACING_FLAG,
+        t.FINACING_DUTY_FLAG,
+        t.DEL_FUND_FLAG,
+        t.LOAN_FLAG,
+        t.MORTGAGE_FLAG,
+        t.PROJECT_PAY_TYPE,
+        t.ECDS_PAY_RATE,
+        t.PROGRESS_PAY_TYPE,
+        t.PROGRESS_PAY_RATE,
+        t.PREPARED_BY reqPreparedBy ,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.PREPARED_BY =v.EMPLOYEE_ID) reqPreparedByName,
+        t.PREPARED_DATE rePreparedDate,
+        t.STATUS documentStatus,
+        t.INVEST_FLAG,
+        t.COMMENTS comments,
+        t.LAST_UPDATE_DATE lastUpdateDate
+        from fdm.fdm_bond_reqs_t t,
+        stm.stm_organizations_v sov,
+
+        (select lookup_code,meaning from stm.stm_lookup_values_t
+        where lookup_type='FDM_BOND_APPLY_TYPE') slv,
+
+        (select lookup_code,meaning from stm.stm_lookup_values_t
+        where lookup_type='FDM_BOND_TYPE') slva
+        where
+        <if test="cscecUser.orgId=='102'.toString()">
+            t.status='APPROVED'
+        </if>
+        <if test="cscecUser.orgId!=102">
+            t.status in ('SUBMITED','APPROVED')
+        </if>
+        and t.ORGANIZATION_ID=sov.ORGANIZATION_ID(+)
+        and t.bond_type=slva.lookup_code(+)
+        and t.apply_type=slv.lookup_code(+)
+
+        ) brt,
+        (select
+        ht. HEADER_ID headerId,
+        ht. DOCUMENT_NUMBER documentNumber,
+        ht.REQ_ID reqId,
+        ht.PREPARED_DATE preparedDate,
+        ht.PREPARED_BY preparedBy,
+        (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where ht.PREPARED_BY=v.EMPLOYEE_ID ) preparedByName,
+        ht. CLAIM_AMOUNT claimAmount,
+        ht. STATUS claimStatus,
+        ht.REPAYMENT_TENDEREE repaymentTenderee,
+        ht. REPAYMENT_BANK_NUMBER repaymentBankNumber,
+        ht. CLAIM_DATE claimDate
+
+        from
+        fdm.FDM_BOND_CLAIM_HEADER_T ht
+
+        where ht.STATUS in('SUBMITED','APPROVED')
+
+
+        ) bcht
+
+        where brt.reqId=bcht.reqId(+)
+
+        and organizationId in (
+        SELECT DISTINCT V.organization_id_child organizationId
+        FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+        STM.STM_ORGANIZATIONS_V SOV
+        WHERE SOV.organization_id = V.organization_id_child
+        AND SOV.TYPE = 'CCEED5'
+        AND v.org_structure_version_id = 4061
+        CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+        START WITH v.organization_id_parent IN
+        (select sov1.org_id
+
+        from stm_per_assignments_v v1,
+        stm.stm_per_people_v spp1,
+        stm_organizations_v sov1
+        where v1.person_id = spp1.PERSON_ID
+        and sov1.organization_id = v1.ORGANIZATION_ID
+        and trunc(sysdate) between spp1.EFFECTIVE_START_DATE and
+        spp1.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v1.EFFECTIVE_START_DATE and
+        v1.EFFECTIVE_END_DATE
+        AND spp1.EMPLOYEE_NUMBER =#{cscecUser.userCode})
+        UNION
+
+        select SOV3.org_id organizationId
+        from stm_per_assignments_v v3, stm.stm_per_people_v spp3,
+        STM.STM_ORGANIZATIONS_V SOV3
+        where v3.person_id = spp3.PERSON_ID
+        and sov3.organization_id = v3.ORGANIZATION_ID
+        and trunc(sysdate) between spp3.EFFECTIVE_START_DATE and
+        spp3.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v3.EFFECTIVE_START_DATE and
+        v3.EFFECTIVE_END_DATE
+        and spp3.EMPLOYEE_NUMBER = #{cscecUser.userCode}
+        )
+        ) m
+        <where>
+
+            <if test="bondTally.documentNumber!=null and bondTally.documentNumber!='' ">
+                and documentNumber like concat(concat('%', #{bondTally.documentNumber}),'%')
+            </if>
+            <if test="bondTally.reqDocumentNumber!=null and bondTally.reqDocumentNumber!='' ">
+                and reqDocumentNumber like concat(concat('%', #{bondTally.reqDocumentNumber}),'%')
+            </if>
+            <if test="bondTally.applyTypeName!=null and bondTally.applyTypeName!='' ">
+                and applyTypeName=#{bondTally.applyTypeName}
+            </if>
+            <if test="bondTally.documentStatus!=null and bondTally.documentStatus!='' ">
+                and documentStatus=#{bondTally.documentStatus}
+            </if>
+            <if test="bondTally.applyType!=null and bondTally.applyType!='' ">
+                and applyType=#{bondTally.applyType}
+            </if>
+
+            <if test="bondTally.isOverdue=='Y'.toString() ">
+                and overDays>0
+            </if>
+            <if test="bondTally.isOverdue=='N'.toString() ">
+                and overDays&lt;=0
+            </if>
+
+            <if test="bondTally.claimStatus!=null and bondTally.claimStatus!='' ">
+                <if test="bondTally.claimStatus=='NOAPPROVED'.toString()">
+                    AND claimStatus IS NULL
+                </if>
+                <if test="bondTally.claimStatus!='NOAPPROVED'">
+                    AND claimStatus =#{bondTally.claimStatus}
+                </if>
+            </if>
+
+
+            <if test="bondTally.bondTypeName!=null and bondTally.bondTypeName!='' ">
+                and bondTypeName=#{bondTally.bondTypeName}
+            </if>
+            <if test="bondTally.bondType!=null and bondTally.bondType!='' ">
+                and bondType=#{bondTally.bondType}
+            </if>
+            <if test="bondTally.organizationName  != null and bondTally.organizationName  != ''  ">
+                and organizationName=#{bondTally.organizationName}
+            </if>
+            <if test="bondTally.organizationId != null and bondTally.organizationId != ''">
+                <if test="containChild==true ">
+                    and organizationId in
+                    (SELECT DISTINCT V.organization_id_child organizationId
+                    FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+                    STM.STM_ORGANIZATIONS_V SOV
+                    WHERE SOV.organization_id = V.organization_id_child
+                    AND SOV.TYPE = 'CCEED5'
+                    AND v.org_structure_version_id = 4061
+                    CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+                    START WITH v.organization_id_parent =#{bondTally.organizationId}
+                    union
+                    select #{bondTally.organizationId} organizationId from dual
+                    )
+                </if>
+                <if test="containChild==false">
+                    and organizationId=#{bondTally.organizationId}
+                </if>
+            </if>
+
+            <if test="bondTally.projectName  != null and bondTally.projectName  != ''  ">
+                and projectName like concat(concat('%', #{bondTally.projectName}),'%')
+            </if>
+            <if test="bondTally.financeHandlerName  != null and bondTally.financeHandlerName  != ''  ">
+                and financeHandlerName=#{bondTally.financeHandlerName}
+            </if>
+            <if test="bondTally.marketHandlerName  != null and bondTally.marketHandlerName  != ''  ">
+                and marketHandlerName=#{bondTally.marketHandlerName}
+            </if>
+        </where>
+        <!--<if test="bondTally.orderCol==null or bondTally.orderCol==''  ">-->
+            ORDER BY lastUpdateDate DESC
+        <!--</if>-->
+        <!--<if test="bondTally.orderCol!=null and bondTally.orderCol!=''">-->
+            <!--ORDER BY  <![CDATA[${bondTally.orderCol}]]>-->
+        <!--</if>-->
+        <!--<if test="bondTally.orderType!=null and bondTally.orderType!='' and bondTally.orderCol!=null and bondTally.orderCol!=''">-->
+            <!--${bondTally.orderType}-->
+        <!--</if>-->
+        <!--<if test="bondTally.orderCol!=null and bondTally.orderCol!=''">-->
+            <!--<if test="bondTally.orderType==null or bondTally.orderType==''">-->
+                <!--DESC-->
+            <!--</if>-->
+        <!--</if>-->
+
+
+        )temp
+
+
+        )temp2
+    </select>
+
+    <!--查询申请单对应的 最近的流水-->
+    <select id="getBankSeqNumber" resultType="string">
+       select BANK_SEQ_NUMBER from (
+           select rownum rn ,m.BANK_SEQ_NUMBER from (
+             select  BANK_SEQ_NUMBER   from  fdm.fdm_bond_cbs_payments_t t
+                        where   t.SOURCE_ID=#{reqId}
+                        and SOURCE_TYPE='BOND'
+                        order by LAST_UPDATE_DATE desc
+                      )m
+        )    where rn=1
+    </select>
+    <!--
+        <select id="getBankSeqNumber" resultType="string">
+    select BANK_SEQ_NUMBER from   fdm.fdm_bond_cbs_payments_t where  LAST_UPDATE_DATE=
+          (select  max(LAST_UPDATE_DATE)   from  fdm.fdm_bond_cbs_payments_t t
+                            where   t.SOURCE_ID=#{reqId}
+                            and SOURCE_TYPE='BOND'
+                            )
+        </select>-->
+    <!--获取未被认领 且未被提交的 CBS流水   按照指定顺序排序-->
+    <!-- <select id="getCBSStatementList" resultType="com.cscec8b.bond.module.object.CBSStatement">
+         select TRANS_ID transId,
+         ACCOUNTS accounts,
+         ACCOUNTS_NAME accountsName ,
+         BANK_SEQ_NUMBER bankSeqNumber ,
+         AMOUNT amount,
+         ABSTRACT remark,
+         TRANS_DATETIME transDatetime,
+         total
+         from (
+         select temp2.* ,
+         rownum rn from (
+         select
+         count(1) over() total,
+
+         temp.* from (
+
+         select
+         0 days,
+         1 orders,
+         hbt.TRANS_ID,
+         hbt.ACCOUNTS ,
+         hbt.ACCOUNTS_NAME,
+         hbt.AMOUNT,
+         hbt.BANK_SEQ_NUMBER,
+         hbt.ABSTRACT ,
+         hbt.TRANS_DATETIME
+         from stm.stm_cbs_his_trans_v hbt
+         where ACCOUNTS=#{cbsStatement.accounts}
+         and AMOUNT=#{cbsStatement.amount}
+         AND BANK_SEQ_NUMBER not in(
+         select clt.BANK_SEQ_NUMBER
+         from fdm.FDM_BOND_CLAIM_HEADER_T cht,
+         fdm.FDM_BOND_CLAIM_LINES_T clt
+         where cht.HEADER_ID=clt.HEADER_ID
+         and (STATUS='APPROVED' or STATUS='SUBMITED')
+         )
+         UNION
+
+         select
+         0 days,
+         2 orders,
+         hbt.TRANS_ID,
+         hbt.ACCOUNTS ,
+         hbt.ACCOUNTS_NAME,
+         hbt.AMOUNT,
+         hbt.BANK_SEQ_NUMBER,
+         hbt.ABSTRACT ,
+         hbt.TRANS_DATETIME
+         from stm.stm_cbs_his_trans_v hbt
+         where ACCOUNTS=#{cbsStatement.accounts}
+         and AMOUNT!=#{cbsStatement.amount}
+         AND BANK_SEQ_NUMBER not in(
+         select clt.BANK_SEQ_NUMBER
+         from fdm.FDM_BOND_CLAIM_HEADER_T cht,
+         fdm.FDM_BOND_CLAIM_LINES_T clt
+         where cht.HEADER_ID=clt.HEADER_ID
+         and (STATUS='APPROVED' or STATUS='SUBMITED')
+         )
+         <if test="cbsStatement.claimDate!=null and cbsStatement.claimDate!=''">
+             UNION
+             select
+             days,
+             3 orders,
+             TRANS_ID,
+             ACCOUNTS ,
+             ACCOUNTS_NAME,
+             AMOUNT,
+             BANK_SEQ_NUMBER,
+             ABSTRACT,
+             TRANS_DATETIME from (
+             SELECT
+             hbt.TRANS_ID,
+             hbt.ACCOUNTS ,
+             hbt.ACCOUNTS_NAME,
+             hbt.AMOUNT,
+             hbt.BANK_SEQ_NUMBER,
+             hbt.ABSTRACT ,
+             hbt.TRANS_DATETIME,
+             ABS(TO_DATE(substr(TRANS_DATETIME,1,10),'YYYY-MM-DD')- TO_DATE(#{cbsStatement.claimDate},'YYYY-MM-DD')) as
+             days
+             FROM stm.stm_cbs_his_trans_v hbt
+             where ACCOUNTS!=#{cbsStatement.accounts}
+             and AMOUNT!=#{cbsStatement.amount}
+             and BANK_SEQ_NUMBER not in (
+             select clt.BANK_SEQ_NUMBER
+             from fdm.FDM_BOND_CLAIM_HEADER_T cht,
+             fdm.FDM_BOND_CLAIM_LINES_T clt
+             where cht.HEADER_ID=clt.HEADER_ID
+             and (STATUS='APPROVED' or STATUS='SUBMITED'))
+             order by days
+             )
+         </if>
+         ) temp
+
+         <where>
+             <if test="cbsStatement.bankSeqNumber!=null and cbsStatement.bankSeqNumber!='' ">
+                 BANK_SEQ_NUMBER like concat(concat('%', #{cbsStatement.bankSeqNumber}),'%')
+             </if>
+             <if test="cbsStatement.amountFrom  != null  ">
+                 and AMOUNT >= #{cbsStatement.amountFrom}
+             </if>
+             <if test="cbsStatement.amountTo != null ">
+                 and AMOUNT &lt;= #{cbsStatement.amountTo}
+             </if>
+             <if test="cbsStatement.accountsName!=null and cbsStatement.accountsName!='' ">
+                 and ACCOUNTS_NAME like concat(concat('%', #{cbsStatement.accountsName}),'%')
+             </if>
+             <if test="cbsStatement.remark!=null and cbsStatement.remark!='' ">
+                 and ABSTRACT like concat(concat('%', #{cbsStatement.remark}),'%')
+             </if>
+             <if test="cbsStatement.searchValue!=null and  cbsStatement.searchValue!=''">
+                 and BANK_SEQ_NUMBER|| '~' ||AMOUNT || '~' || ACCOUNTS_NAME ||'~' ||
+                 ABSTRACT ||'~'|| TRANS_DATETIME ||'~'|| ACCOUNTS
+                 like CONCAT(CONCAT('%',#{cbsStatement.searchValue}),'%')
+             </if>
+
+         </where>
+         order by orders ,days asc
+         )temp2
+         )temp3
+         where rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+     </select>-->
+
+    <select id="getCBSStatementList" resultType="com.cscec8b.bond.module.object.CBSStatement">
+        select
+        PURPOSE purpose,
+        TRANS_ID transId,
+        ACCOUNTS accounts,
+        ACCOUNTS_NAME accountsName ,
+        BANK_SEQ_NUMBER bankSeqNumber ,
+        organizationName ,
+        STATUS status,
+        AMOUNT amount,
+        ABSTRACT remark,
+        TRANS_DATETIME transDatetime,
+        total
+        from (
+        select temp2.* ,
+        rownum rn from (
+        select
+        count(1) over() total,
+
+        temp.* from (
+
+        select
+        hbt.PURPOSE ,
+        0 days,
+        1 orders,
+        hbt.TRANS_ID,
+        hbt.OPPOSITE_ACCOUNTS ACCOUNTS ,
+        hbt.OPPOSITE_ACCOUNTS_NAME ACCOUNTS_NAME,
+        hbt.AMOUNT,
+        cht.organizationName,
+        hbt.BANK_SEQ_NUMBER,
+        hbt.ABSTRACT ,
+        hbt.TRANS_DATETIME,
+        cht.STATUS
+        from
+        (select * from
+        stm.stm_cbs_his_trans_v v   where v.OPPOSITE_ACCOUNTS not in (
+        select pd.account_name from
+        fdm.fdm_bond_org_pay_defs_t pd
+        )
+        ) hbt,
+        ( select
+        t.ORGANIZATION_ID,
+        sov.NAME organizationName,
+        clt.BANK_SEQ_NUMBER,
+        t.STATUS
+        from
+        fdm.FDM_BOND_CLAIM_HEADER_T t,
+        fdm.FDM_BOND_CLAIM_LINES_T clt,
+        stm.stm_organizations_v sov
+        where
+        t.HEADER_ID=clt.HEADER_ID
+        and t.ORGANIZATION_ID=sov.ORGANIZATION_ID
+        and t.STATUS in ('SUBMITED','APPROVED')
+        )cht
+        where hbt.BANK_SEQ_NUMBER=cht.BANK_SEQ_NUMBER(+)
+
+
+        and hbt.OPPOSITE_ACCOUNTS=#{cbsStatement.accounts}
+
+        and hbt.OPPOSITE_ACCOUNTS_NAME=#{cbsStatement.accountsName}
+
+        and hbt.AMOUNT=#{cbsStatement.amount}
+        and hbt.debit_credit_flag='2'
+        and to_date(hbt.TRANS_DATETIME,'yyyy-MM-dd hh24:mi:ss')>
+        ( select t.prepared_date from fdm.fdm_bond_reqs_t t
+        where t.req_id=#{reqId} )
+        and to_date(hbt.TRANS_DATETIME,'yyyy-MM-dd hh24:mi:ss')>sysdate-365
+        and hbt.ACCOUNTS in (
+        <if test="applyType!='BUREAU_AGENT' ">
+            select ACCOUNT_BANK_NUMBER from fdm.fdm_bond_org_pay_defs_t t
+            WHERE T.COMPANY_ID in (
+            SELECT distinct decode(TEMP.LE,3,TEMP.ORGANIZATION_ID_PARENT,TEMP.ORGANIZATION_ID_CHILD)
+            FROM (SELECT DISTINCT V.ORGANIZATION_ID_CHILD,
+            SOV.NAME,
+            V.ORGANIZATION_ID_PARENT,
+            LEVEL + 1 LE
+            FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+            STM.STM_ORGANIZATIONS_V SOV
+            WHERE SOV.ORGANIZATION_ID = V.ORGANIZATION_ID_CHILD
+            AND SOV.TYPE = 'CCEED5'
+            AND V.ORG_STRUCTURE_VERSION_ID = 4061
+            CONNECT BY V.ORGANIZATION_ID_PARENT = PRIOR
+            V.ORGANIZATION_ID_CHILD
+            START WITH V.ORGANIZATION_ID_PARENT = 102
+            ) TEMP
+            WHERE TEMP.ORGANIZATION_ID_CHILD in
+
+            (
+            select distinct t.organization_id from fdm.fdm_bond_reqs_t t where t.req_id=#{reqId}
+            )
+            )
+        </if>
+        <if test="applyType!='NOT_BUREAU_AGENT' ">
+            select ACCOUNT_BANK_NUMBER from fdm.fdm_bond_org_pay_defs_t
+            where COMPANY_ID=102
+        </if>
+
+        )
+
+        UNION
+
+        select
+        hbt.PURPOSE ,
+        0 days,
+        2 orders,
+        hbt.TRANS_ID,
+        hbt.OPPOSITE_ACCOUNTS ACCOUNTS ,
+        hbt.OPPOSITE_ACCOUNTS_NAME ACCOUNTS_NAME,
+        hbt.AMOUNT,
+        cht.organizationName,
+        hbt.BANK_SEQ_NUMBER,
+        hbt.ABSTRACT ,
+        hbt.TRANS_DATETIME,
+        cht.STATUS
+        from
+        (select * from
+        stm.stm_cbs_his_trans_v v   where v.OPPOSITE_ACCOUNTS not in (
+        select pd.account_name from
+        fdm.fdm_bond_org_pay_defs_t pd
+        )
+        ) hbt,
+        ( select
+        t.ORGANIZATION_ID,
+        sov.NAME organizationName,
+        clt.BANK_SEQ_NUMBER,
+        t.STATUS
+        from
+        fdm.FDM_BOND_CLAIM_HEADER_T t,
+        fdm.FDM_BOND_CLAIM_LINES_T clt,
+        stm.stm_organizations_v sov
+        where
+        t.HEADER_ID=clt.HEADER_ID
+        and t.ORGANIZATION_ID=sov.ORGANIZATION_ID
+        and t.STATUS in ('SUBMITED','APPROVED')
+        )cht
+        where hbt.BANK_SEQ_NUMBER=cht.BANK_SEQ_NUMBER(+)
+        and hbt.debit_credit_flag='2'
+        and to_date(hbt.TRANS_DATETIME,'yyyy-MM-dd hh24:mi:ss')>( select t.prepared_date from fdm.fdm_bond_reqs_t t
+        where
+        t.req_id=#{reqId})
+        and to_date(hbt.TRANS_DATETIME,'yyyy-MM-dd hh24:mi:ss')>sysdate-365
+        and hbt.trans_id in (
+        select trans_id from stm.stm_cbs_his_trans_v v2
+        where v2.trans_id not in (
+        select trans_id from stm.stm_cbs_his_trans_v v
+        where
+        v.OPPOSITE_ACCOUNTS=#{cbsStatement.accounts}
+        and v.OPPOSITE_ACCOUNTS_NAME=#{cbsStatement.accountsName}
+        and v.AMOUNT=#{cbsStatement.amount}
+        )
+        and v2.OPPOSITE_ACCOUNTS=#{cbsStatement.accounts}
+        and v2.OPPOSITE_ACCOUNTS_NAME=#{cbsStatement.accountsName}
+        )
+
+        and hbt.ACCOUNTS in (
+        <if test="applyType!='BUREAU_AGENT' ">
+            select ACCOUNT_BANK_NUMBER from fdm.fdm_bond_org_pay_defs_t t
+            WHERE T.COMPANY_ID in (
+            SELECT distinct decode(TEMP.LE,3,TEMP.ORGANIZATION_ID_PARENT,TEMP.ORGANIZATION_ID_CHILD)
+            FROM (SELECT DISTINCT V.ORGANIZATION_ID_CHILD,
+            SOV.NAME ,
+            V.ORGANIZATION_ID_PARENT,
+            LEVEL + 1 LE
+            FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+            STM.STM_ORGANIZATIONS_V SOV
+            WHERE SOV.ORGANIZATION_ID = V.ORGANIZATION_ID_CHILD
+            AND SOV.TYPE = 'CCEED5'
+            AND V.ORG_STRUCTURE_VERSION_ID = 4061
+            CONNECT BY V.ORGANIZATION_ID_PARENT = PRIOR
+            V.ORGANIZATION_ID_CHILD
+            START WITH V.ORGANIZATION_ID_PARENT = 102
+            ) TEMP
+            WHERE TEMP.ORGANIZATION_ID_CHILD in
+            (
+            select distinct t.organization_id from fdm.fdm_bond_reqs_t t where t.req_id=#{reqId}
+            )
+            )
+        </if>
+
+        <if test="applyType!='NOT_BUREAU_AGENT' ">
+            select ACCOUNT_BANK_NUMBER from fdm.fdm_bond_org_pay_defs_t
+            where COMPANY_ID=102
+        </if>
+
+        )
+
+        union
+
+        select
+        hbt.PURPOSE ,
+        0 days,
+        3 orders,
+        hbt.TRANS_ID,
+        hbt.OPPOSITE_ACCOUNTS ACCOUNTS ,
+        hbt.OPPOSITE_ACCOUNTS_NAME ACCOUNTS_NAME,
+        hbt.AMOUNT,
+        cht.organizationName,
+        hbt.BANK_SEQ_NUMBER,
+        hbt.ABSTRACT ,
+        hbt.TRANS_DATETIME,
+        cht.STATUS
+        from
+        (select * from
+        stm.stm_cbs_his_trans_v v   where v.OPPOSITE_ACCOUNTS not in (
+        select pd.account_name from
+        fdm.fdm_bond_org_pay_defs_t pd
+        )
+        ) hbt,
+        ( select
+        t.ORGANIZATION_ID,
+        sov.NAME organizationName,
+        clt.BANK_SEQ_NUMBER,
+        t.STATUS
+        from
+        fdm.FDM_BOND_CLAIM_HEADER_T t,
+        fdm.FDM_BOND_CLAIM_LINES_T clt,
+        stm.stm_organizations_v sov
+        where
+        t.HEADER_ID=clt.HEADER_ID
+        and t.ORGANIZATION_ID=sov.ORGANIZATION_ID
+        and t.STATUS in ('SUBMITED','APPROVED')
+        )cht
+        where hbt.BANK_SEQ_NUMBER=cht.BANK_SEQ_NUMBER(+)
+        and hbt.debit_credit_flag='2'
+        and to_date(hbt.TRANS_DATETIME,'yyyy-MM-dd hh24:mi:ss')>( select t.prepared_date from fdm.fdm_bond_reqs_t t
+        where
+        t.req_id=#{reqId})
+        and to_date(hbt.TRANS_DATETIME,'yyyy-MM-dd hh24:mi:ss')>sysdate-365
+        and hbt. trans_id in (
+        select trans_id from stm.stm_cbs_his_trans_v v2
+        where v2. trans_id not in (
+        select trans_id from stm.stm_cbs_his_trans_v v
+        where
+        v.OPPOSITE_ACCOUNTS=#{cbsStatement.accounts}
+        and v.OPPOSITE_ACCOUNTS_NAME=#{cbsStatement.accountsName}
+        and v.AMOUNT=#{cbsStatement.amount}
+        )
+        and v2.OPPOSITE_ACCOUNTS_NAME=#{cbsStatement.accountsName}
+        and v2.AMOUNT=#{cbsStatement.amount}
+        )
+
+        and hbt.ACCOUNTS in (
+        <if test="applyType!='BUREAU_AGENT' ">
+            select ACCOUNT_BANK_NUMBER from fdm.fdm_bond_org_pay_defs_t t
+            WHERE T.COMPANY_ID in (
+            SELECT distinct decode(TEMP.LE,3,TEMP.ORGANIZATION_ID_PARENT,TEMP.ORGANIZATION_ID_CHILD)
+            FROM (SELECT DISTINCT V.ORGANIZATION_ID_CHILD,
+            SOV.NAME ,
+            V.ORGANIZATION_ID_PARENT,
+            LEVEL + 1 LE
+            FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+            STM.STM_ORGANIZATIONS_V SOV
+            WHERE SOV.ORGANIZATION_ID = V.ORGANIZATION_ID_CHILD
+            AND SOV.TYPE = 'CCEED5'
+            AND V.ORG_STRUCTURE_VERSION_ID = 4061
+            CONNECT BY V.ORGANIZATION_ID_PARENT = PRIOR
+            V.ORGANIZATION_ID_CHILD
+            START WITH V.ORGANIZATION_ID_PARENT = 102
+            ) TEMP
+            WHERE TEMP.ORGANIZATION_ID_CHILD in
+
+            (
+            select distinct t.organization_id from fdm.fdm_bond_reqs_t t where t.req_id=#{reqId}
+            )
+            )
+        </if>
+
+        <if test="applyType!='NOT_BUREAU_AGENT' ">
+            select ACCOUNT_BANK_NUMBER from fdm.fdm_bond_org_pay_defs_t
+            where COMPANY_ID=102
+        </if>
+
+        )
+
+        <if test="cbsStatement.claimDate!=null and cbsStatement.claimDate!=''">
+            UNION
+            select
+            PURPOSE ,
+            days,
+            4 orders,
+            TRANS_ID,
+            ACCOUNTS ,
+            ACCOUNTS_NAME,
+            AMOUNT,
+            organizationName,
+            BANK_SEQ_NUMBER,
+            ABSTRACT ,
+            TRANS_DATETIME,
+            STATUS
+            from (
+            SELECT
+            hbt.PURPOSE ,
+            hbt.TRANS_ID,
+            hbt.OPPOSITE_ACCOUNTS ACCOUNTS ,
+            hbt.OPPOSITE_ACCOUNTS_NAME ACCOUNTS_NAME,
+            hbt.AMOUNT,
+            cht.organizationName,
+            hbt.BANK_SEQ_NUMBER,
+            hbt.ABSTRACT ,
+            hbt.TRANS_DATETIME,
+            ABS(TO_DATE(substr(TRANS_DATETIME,1,10),'YYYY-MM-DD')- TO_DATE(#{cbsStatement.claimDate},'YYYY-MM-DD')) as
+            days,
+            cht.STATUS
+            FROM
+            (select * from
+            stm.stm_cbs_his_trans_v v   where v.OPPOSITE_ACCOUNTS not in (
+            select pd.account_name from
+            fdm.fdm_bond_org_pay_defs_t pd
+            )
+            ) hbt,
+            ( select
+            t.ORGANIZATION_ID,
+            sov.NAME organizationName,
+            clt.BANK_SEQ_NUMBER,
+            t.STATUS
+            from
+            fdm.FDM_BOND_CLAIM_HEADER_T t,
+            fdm.FDM_BOND_CLAIM_LINES_T clt,
+            stm.stm_organizations_v sov
+            where
+            t.HEADER_ID=clt.HEADER_ID
+            and t.ORGANIZATION_ID=sov.ORGANIZATION_ID
+            and t.STATUS in ('SUBMITED','APPROVED')
+            )cht
+            where hbt.BANK_SEQ_NUMBER=cht.BANK_SEQ_NUMBER(+)
+            and hbt.debit_credit_flag='2'
+            and to_date(hbt.TRANS_DATETIME,'yyyy-MM-dd hh24:mi:ss')>
+            ( select t.prepared_date from fdm.fdm_bond_reqs_t t
+            where t.req_id=#{reqId} )
+            and to_date(hbt.TRANS_DATETIME,'yyyy-MM-dd hh24:mi:ss')>sysdate-365
+            and hbt.trans_id in
+            (
+            select trans_id from stm_cbs_his_trans_v v2 where trans_id
+            not in
+            ( select trans_id from stm.stm_cbs_his_trans_v v
+            where
+            v.OPPOSITE_ACCOUNTS_NAME=#{cbsStatement.accountsName}
+            )
+            UNION
+            select trans_id from stm_cbs_his_trans_v v where
+            v.OPPOSITE_ACCOUNTS_NAME=#{cbsStatement.accountsName}
+            and v.OPPOSITE_ACCOUNTS!=#{cbsStatement.accounts}
+            and v.AMOUNT!=#{cbsStatement.amount}
+            )
+            and hbt.ACCOUNTS in (
+            <if test="applyType!='BUREAU_AGENT' ">
+                select ACCOUNT_BANK_NUMBER from fdm.fdm_bond_org_pay_defs_t t
+                WHERE T.COMPANY_ID in (
+                SELECT distinct decode(TEMP.LE,3,TEMP.ORGANIZATION_ID_PARENT,TEMP.ORGANIZATION_ID_CHILD)
+                FROM (SELECT DISTINCT V.ORGANIZATION_ID_CHILD,
+                SOV.NAME ,
+                V.ORGANIZATION_ID_PARENT,
+                LEVEL + 1 LE
+                FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+                STM.STM_ORGANIZATIONS_V SOV
+                WHERE SOV.ORGANIZATION_ID = V.ORGANIZATION_ID_CHILD
+                AND SOV.TYPE = 'CCEED5'
+                AND V.ORG_STRUCTURE_VERSION_ID = 4061
+                CONNECT BY V.ORGANIZATION_ID_PARENT = PRIOR
+                V.ORGANIZATION_ID_CHILD
+                START WITH V.ORGANIZATION_ID_PARENT = 102
+                ) TEMP
+                WHERE TEMP.ORGANIZATION_ID_CHILD in
+                (
+                select distinct t.organization_id from fdm.fdm_bond_reqs_t t where t.req_id=#{reqId}
+                )
+                )
+            </if>
+
+            <if test="applyType!='NOT_BUREAU_AGENT' ">
+                select ACCOUNT_BANK_NUMBER from fdm.fdm_bond_org_pay_defs_t
+                where COMPANY_ID=102
+            </if>
+
+            )
+        </if>
+        )
+        ) temp
+
+        <where>
+            <if test="cbsStatement.bankSeqNumber!=null and cbsStatement.bankSeqNumber!='' ">
+                BANK_SEQ_NUMBER like concat(concat('%', #{cbsStatement.bankSeqNumber}),'%')
+            </if>
+            <if test="cbsStatement.amountFrom != null ">
+                and AMOUNT >= #{cbsStatement.amountFrom}
+            </if>
+            <if test="cbsStatement.amountTo != null ">
+                and AMOUNT &lt;= #{cbsStatement.amountTo}
+            </if>
+
+            <if test="cbsStatement.remark!=null and cbsStatement.remark!='' ">
+                and ABSTRACT like concat(concat('%', #{cbsStatement.remark}),'%')
+            </if>
+            <if test="cbsStatement.searchValue!=null and cbsStatement.searchValue!=''">
+                and BANK_SEQ_NUMBER|| '~' ||AMOUNT || '~' || ACCOUNTS_NAME ||'~' ||
+                ABSTRACT ||'~'|| TRANS_DATETIME ||'~'|| ACCOUNTS || '~' || PURPOSE
+                like CONCAT(CONCAT('%',#{cbsStatement.searchValue}),'%')
+            </if>
+        </where>
+        order by orders ,days asc
+        )temp2
+        )temp3
+        where rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+    <!--提交保证金认领的时候 获取验证流水-->
+    <select id="getCBSStatementByTransId" resultType="com.cscec8b.bond.module.object.CBSStatement">
+       select
+        hbt.TRANS_ID transId,
+        hbt.ACCOUNTS accounts ,
+        hbt.ACCOUNTS_NAME accountsName,
+        hbt.AMOUNT amount,
+        hbt.BANK_SEQ_NUMBER bankSeqNumber,
+        hbt.ABSTRACT remark,
+        hbt.TRANS_DATETIME transDatetime
+        from stm.stm_cbs_his_trans_v    hbt
+        where NOT EXISTS (
+                select clt.TRANS_ID
+                from fdm.FDM_BOND_CLAIM_HEADER_T cht,
+                fdm.FDM_BOND_CLAIM_LINES_T clt
+                where cht.HEADER_ID=clt.HEADER_ID
+                and (STATUS='APPROVED' or STATUS='SUBMITED')
+                AND CLT.TRANS_ID = HBT.TRANS_ID
+        )
+        and TRANS_ID=#{transId,jdbcType=VARCHAR}
+        order by amount desc
+    </select>
+
+
+    <!--支付状态验证  查询是否有对应的流水   -->
+    <select id="getCBSStatementPaymentId" resultType="int">
+     select  PAYMENT_ID
+     FROM fdm.fdm_bond_cbs_payments_t
+     where   SOURCE_ID=#{sourceId}
+      AND    REQ_NODE=#{nodeName}
+      and    SOURCE_TYPE='BOND'
+      AND    STATUS='推送成功'
+      and rownum=1
+    </select>
+
+    <!--ERP凭证 需要的主键   Ky：此方法已废弃-->
+    <select id="getCBSStatementId" resultType="string">
+
+    select TRANS_ID from     stm.stm_cbs_his_trans_v
+    where BANK_SEQ_NUMBER=#{bankSeqNumber}
+
+    </select>
+
+
+    <update id="updateERPHeaderByHeaderId">
+        update   fdm.fdm_bond_erp_header_t
+        set ERROR_MSG=#{msg},
+         STATUS=#{status},
+        OBJECT_VERSION_NUMBER=OBJECT_VERSION_NUMBER+1,
+        LAST_UPDATED_BY  = #{cscecUser.userId},
+        LAST_UPDATE_DATE=sysdate,
+        LAST_PUSH_DATE=sysdate
+       where HEADER_ID=#{headerId}
+    </update>
+
+
+    <select id="IS_VALIDATE_TRANSFER_DATE" parameterType="java.util.Map" statementType="CALLABLE">
+       {
+            #{p_out,mode=OUT,jdbcType=VARCHAR}=call
+              stm_fdm_bond_common_pkg.is_validate_transfer_date(
+              #{P_TRANSFER_DATE,mode=IN,jdbcType=DATE}
+              )
+        }
+    </select>
+
+    <!--调用生成ERP的接口-->
+    <select id="createErpCft" parameterType="java.util.Map" statementType="CALLABLE">
+       {
+        call
+        stm_fdm_bond_common_pkg.insertbonderp(
+        #{p_source_id,mode=IN,jdbcType=NUMERIC},
+        #{x_error_msg,mode=OUT,jdbcType=VARCHAR},
+        #{x_result_flag,mode=OUT,jdbcType=VARCHAR}
+        )
+        }
+  </select>
+    <!--获取cbs的主键-->
+    <select id="getCBSStatementIdBySourceIdAndType" resultType="Integer">
+    select t.PAYMENT_ID  from
+     fdm.fdm_bond_cbs_payments_t t
+     where t.SOURCE_TYPE=#{sourceType}
+     and t.SOURCE_ID=#{sourceId}
+     and  rownum=1
+    </select>
+
+</mapper>

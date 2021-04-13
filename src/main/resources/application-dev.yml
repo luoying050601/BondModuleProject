@@ -1,0 +1,57 @@
+spring:
+  datasource:
+    primary: #第一数据源
+        username: stm
+        password: stm
+        url: jdbc:oracle:thin:@10.8.2.124:1551:DEV
+        driver-class-name: oracle.jdbc.driver.OracleDriver
+    secondary: #第二数据源
+        username: fmw6dev_soainfra
+        password: welcome1
+        url: jdbc:oracle:thin:@10.8.2.160:1521:fmwdbdev
+        driver-class-name: oracle.jdbc.driver.OracleDriver
+  #rabbitmq地址
+  rabbitmq:
+    host: 10.8.2.164
+    username: oracle
+    password: oracle@2018
+    port: 5672
+  #开启热部署
+  devtools:
+    restart:
+      enabled: true
+  ldap:
+    username: cn=orcladmin
+    password: weblogic1
+    urls: ldap://10.8.2.161:3060
+    base: cn=Users,dc=cscec8b,dc=com,dc=cn
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+    multipart:             #文件上传的最大size
+      maxFileSize : 20Mb
+      maxRequestSize : 100Mb
+  jackson:
+      default-property-inclusion: non_null
+
+jwt:
+  secret: CSCEC8B
+  expiration: 72000000    #毫秒
+
+url:
+  DBPMApproval: http://10.8.2.162:8011
+  upload: http://10.8.2.163:10003
+  BondService :  /BondService/
+#jndi数据源
+jndiName:
+   primary:   jdbc/STMConnDS
+   secondary:  jdbc/SOAConnDS
+
+#禁用feign连接超时
+feign:
+   hystrix:
+     enabled: false
+
+
+

@@ -1,0 +1,36 @@
+
+spring:
+  datasource:
+     primary: #第一数据源
+       driver-class-name: oracle.jdbc.driver.OracleDriver
+       jndi-name: jdbc/STMConnDS
+     secondary: #第二数据源
+       driver-class-name: oracle.jdbc.driver.OracleDriver
+       jndi-name: jdbc/SOAConnDS
+
+  ldap:
+    username: cn=orcladmin
+    password: weblogic1
+    urls: ldap://idmtest1.cscec8b.com.cn:3059
+    base: cn=Users,dc=cscec8b,dc=com,dc=cn
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+    multipart:
+      maxFileSize : 20Mb
+      maxRequestSize : 100Mb
+  jackson:
+      default-property-inclusion: non_null
+
+jwt:
+  secret: CSCEC8B
+  expiration: 72000000    #毫秒
+
+url:
+  DBPMApproval: http://tapp.cscec8b.com.cn        #物料申请单 流程服务接口的URL
+  upload: http://tapp.cscec8b.com.cn
+  BondService :  /
+jndiName:
+  primary:   jdbc/STMConnDS
+  secondary:  jdbc/SOAConnDS

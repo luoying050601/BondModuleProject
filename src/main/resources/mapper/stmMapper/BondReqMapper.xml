@@ -1,0 +1,912 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cscec8b.bond.module.dao.BondReqApiDao">
+
+    <!--获取单据编号-->
+    <select id="callGetDocNumber" parameterType="java.util.Map" statementType="CALLABLE">
+        {
+        call
+        stm.stm_fdm_bond_common_pkg.get_doc_number(
+        #{docType,mode=IN,jdbcType=VARCHAR},
+        #{orgId,mode=IN,jdbcType=NUMERIC},
+        #{docNum,mode=OUT,jdbcType=VARCHAR},
+        #{error,mode=OUT,jdbcType=VARCHAR}
+        )
+        }
+    </select>
+    <!--新增保证金申请-->
+    <insert id="insertBondReqDetail">
+        insert into fdm.fdm_bond_reqs_t(
+        REQ_ID,
+        DOCUMENT_NUMBER,
+        ORGANIZATION_ID,
+        APPLY_TYPE,
+        PROJECT_NAME,
+        BOND_TYPE,
+        FINANCE_HANDLER,
+        MARKET_HANDLER,
+        PROJECT_BOND_AMOUNT,
+        PROJECT_BOND_AMOUNT_TYPE,
+        REPAYMENT_DATE,
+        CONTRACT_AMOUNT,
+        OTHER_DUTY,
+        PAY_AMOUNT,
+        PAY_DATE,
+        PAY_DESC,
+        PAY_USAGE,
+        PAY_DUTY,
+        OTHER_DESC,
+        TENDEREE_ACCOUNT_NAME,
+        TENDEREE_ACCOUNT_BANK_NAME,
+        TENDEREE_ACCOUNT_BANK_NUMBER,
+        FINACING_FLAG,
+        FINACING_DUTY_FLAG,
+        DEL_FUND_FLAG,
+        LOAN_FLAG,
+        MORTGAGE_FLAG,
+        PROJECT_PAY_TYPE,
+        ECDS_PAY_RATE,
+        PROGRESS_PAY_TYPE,
+        PROGRESS_PAY_RATE,
+        PREPARED_BY,
+        PREPARED_DATE,
+        STATUS,
+        INVEST_FLAG,
+        COMMENTS,
+        OBJECT_VERSION_NUMBER,
+        CREATION_DATE,
+        CREATED_BY,
+        LAST_UPDATED_BY,
+        LAST_UPDATE_DATE,
+        TENDEREE_BANK_TYPE,
+        TENDEREE_PROVINCE,
+        TENDEREE_CITY,
+        I_S_FALG,
+        PAY_TYPE,
+        ATTRIBUTE1
+        )
+        values (
+        #{bondReqDetail.reqId},
+        #{bondReqDetail.documentNumber,jdbcType=VARCHAR},
+        #{bondReqDetail.organizationId,jdbcType=NUMERIC},
+        #{bondReqDetail.applyType,jdbcType=VARCHAR},
+        #{bondReqDetail.projectName,jdbcType=VARCHAR},
+        #{bondReqDetail.bondType,jdbcType=VARCHAR},
+        #{bondReqDetail.financeHandler,jdbcType=NUMERIC},
+        #{bondReqDetail.marketHandler,jdbcType=NUMERIC},
+        #{bondReqDetail.projectBondAmount,jdbcType=VARCHAR},
+        #{bondReqDetail.projectBondAmountType,jdbcType=VARCHAR},
+        <if test="bondReqDetail.repaymentDate!=null and bondReqDetail.repaymentDate!=''">
+            to_date(#{bondReqDetail.repaymentDate},'yyyy-MM-dd'),
+        </if>
+        <if test="bondReqDetail.repaymentDate==null or bondReqDetail.repaymentDate==''">
+            null,
+        </if>
+        #{bondReqDetail.contractAmount,jdbcType=NUMERIC},
+        #{bondReqDetail.otherDuty},
+        #{bondReqDetail.payAmount,jdbcType=NUMERIC},
+        null,
+        #{bondReqDetail.payDesc,jdbcType=VARCHAR},
+        #{bondReqDetail.payUsage,jdbcType=VARCHAR},
+        #{bondReqDetail.payDuty,jdbcType=VARCHAR},
+        #{bondReqDetail.otherDesc,jdbcType=VARCHAR},
+        #{bondReqDetail.tendereeAccountName,jdbcType=VARCHAR},
+        #{bondReqDetail.tendereeAccountBankName,jdbcType=VARCHAR},
+        #{bondReqDetail.tendereeAccountBankNumber,jdbcType=VARCHAR},
+        #{bondReqDetail.finacingFlag,jdbcType=VARCHAR},
+        #{bondReqDetail.finacingDutyFlag,jdbcType=VARCHAR},
+        #{bondReqDetail.delFundFlag,jdbcType=VARCHAR},
+        #{bondReqDetail.loanFlag,jdbcType=VARCHAR},
+        #{bondReqDetail.mortgageFlag,jdbcType=VARCHAR},
+        #{bondReqDetail.projectPayType,jdbcType=VARCHAR},
+        #{bondReqDetail.ecdsPayRate,jdbcType=NUMERIC},
+        #{bondReqDetail.progressPayType,jdbcType=NUMERIC},
+        #{bondReqDetail.progressPayRate,jdbcType=NUMERIC},
+        #{cscecUser.userId},
+        sysdate,
+        'NEW',
+        #{bondReqDetail.investFlag,jdbcType=VARCHAR},
+        #{bondReqDetail.comments,jdbcType=VARCHAR},
+        1,
+        <if test="bondReqDetail.preparedDate!=null and bondReqDetail.preparedDate!=''">
+            to_date(#{bondReqDetail.preparedDate},'yyyy-MM-dd'),
+        </if>
+        <if test="bondReqDetail.preparedDate==null and bondReqDetail.preparedDate==''">
+            sysdate,
+        </if>
+
+        #{cscecUser.userId},
+        #{cscecUser.userId},
+        SYSDATE,
+
+        #{bondReqDetail.tendereeBankType,jdbcType=VARCHAR},
+        #{bondReqDetail.tendereeProvince,jdbcType=VARCHAR},
+        #{bondReqDetail.tendereeCity,jdbcType=VARCHAR},
+        #{bondReqDetail.ISFlag,jdbcType=VARCHAR},
+        #{bondReqDetail.payType,jdbcType=VARCHAR},
+        #{bondReqDetail.attribute1,jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <update id="updateBondReqDetail">
+        update fdm.fdm_bond_reqs_t
+        set
+        ORGANIZATION_ID=#{bondReqDetail.organizationId,jdbcType=NUMERIC},
+        APPLY_TYPE=#{bondReqDetail.applyType,jdbcType=VARCHAR},
+        PROJECT_NAME=#{bondReqDetail.projectName,jdbcType=VARCHAR},
+        BOND_TYPE=#{bondReqDetail.bondType,jdbcType=VARCHAR},
+        FINANCE_HANDLER=#{bondReqDetail.financeHandler,jdbcType=NUMERIC},
+        MARKET_HANDLER=#{bondReqDetail.marketHandler,jdbcType=NUMERIC},
+        PROJECT_BOND_AMOUNT=#{bondReqDetail.projectBondAmount,jdbcType=VARCHAR},
+        PROJECT_BOND_AMOUNT_TYPE=#{bondReqDetail.projectBondAmountType,jdbcType=VARCHAR},
+        REPAYMENT_DATE=to_date(#{bondReqDetail.repaymentDate},'yyyy-MM-dd'),
+        PREPARED_DATE=to_date(#{bondReqDetail.preparedDate},'yyyy-MM-dd'),
+        CONTRACT_AMOUNT=#{bondReqDetail.contractAmount,jdbcType=NUMERIC},
+        OTHER_DUTY=#{bondReqDetail.otherDuty},
+        PAY_AMOUNT=#{bondReqDetail.payAmount,jdbcType=NUMERIC},
+        PAY_DATE=to_date(#{bondReqDetail.payDate},'yyyy-MM-dd'),
+        PAY_DESC=#{bondReqDetail.payUsage},
+        PAY_USAGE=#{bondReqDetail.payUsage},
+        PAY_DUTY=#{bondReqDetail.payDuty},
+        OTHER_DESC=#{bondReqDetail.otherDesc},
+        TENDEREE_ACCOUNT_NAME=#{bondReqDetail.tendereeAccountName},
+        TENDEREE_ACCOUNT_BANK_NAME=#{bondReqDetail.tendereeAccountBankName},
+        TENDEREE_ACCOUNT_BANK_NUMBER=#{bondReqDetail.tendereeAccountBankNumber},
+        FINACING_FLAG=#{bondReqDetail.finacingFlag},
+        FINACING_DUTY_FLAG=#{bondReqDetail.finacingDutyFlag},
+        DEL_FUND_FLAG=#{bondReqDetail.delFundFlag},
+        LOAN_FLAG=#{bondReqDetail.loanFlag},
+        MORTGAGE_FLAG=#{bondReqDetail.mortgageFlag},
+        PROJECT_PAY_TYPE=#{bondReqDetail.projectPayType},
+        ECDS_PAY_RATE=#{bondReqDetail.ecdsPayRate,jdbcType=NUMERIC},
+        PROGRESS_PAY_TYPE=#{bondReqDetail.progressPayType},
+        PROGRESS_PAY_RATE=#{bondReqDetail.progressPayRate,jdbcType=NUMERIC},
+        PREPARED_BY=#{cscecUser.userId},
+        INVEST_FLAG=#{bondReqDetail.investFlag,jdbcType=VARCHAR},
+        I_S_FALG=#{bondReqDetail.ISFlag,jdbcType=VARCHAR},
+        COMMENTS=#{bondReqDetail.comments,jdbcType=VARCHAR},
+        OBJECT_VERSION_NUMBER=OBJECT_VERSION_NUMBER+1,
+        LAST_UPDATED_BY=#{cscecUser.userId},
+        LAST_UPDATE_DATE=sysdate,
+        TENDEREE_BANK_TYPE=#{bondReqDetail.tendereeBankType,jdbcType=VARCHAR},
+        TENDEREE_PROVINCE=#{bondReqDetail.tendereeProvince,jdbcType=VARCHAR},
+        TENDEREE_CITY=#{bondReqDetail.tendereeCity,jdbcType=VARCHAR},
+        PAY_TYPE=#{bondReqDetail.payType,jdbcType=VARCHAR},
+        ATTRIBUTE1=#{bondReqDetail.attribute1,jdbcType=VARCHAR}
+        where
+        DOCUMENT_NUMBER=#{bondReqDetail.documentNumber}
+    </update>
+
+    <update id="updateBondReqDetailPayDate">
+     update fdm.fdm_bond_reqs_t
+        set
+        PAY_DATE=sysdate,
+        OBJECT_VERSION_NUMBER=OBJECT_VERSION_NUMBER+1,
+        LAST_UPDATED_BY=#{cscecUser.userId},
+        LAST_UPDATE_DATE=sysdate
+        where
+        REQ_ID=#{reqId}
+
+    </update>
+    <!--changeBondReqDetail-->
+    <update id="changeBondReqDetail">
+        update fdm.fdm_bond_reqs_t
+        set
+
+        <if test="bondReqDetail.repaymentDate!=null and bondReqDetail.repaymentDate!='' ">
+            REPAYMENT_DATE=to_date(#{bondReqDetail.repaymentDate},'yyyy-mm-dd'),
+        </if>
+
+        <if test="bondReqDetail.payUsage!=null and bondReqDetail.payUsage!='' ">
+            PAY_USAGE=#{bondReqDetail.payUsage,jdbcType=VARCHAR},
+        </if>
+
+        <if test="bondReqDetail.tendereeAccountName!=null and bondReqDetail.tendereeAccountName!='' ">
+            TENDEREE_ACCOUNT_NAME=#{bondReqDetail.tendereeAccountName,jdbcType=VARCHAR},
+        </if>
+
+        <if test="bondReqDetail.tendereeAccountBankName!=null and bondReqDetail.tendereeAccountBankName!='' ">
+            TENDEREE_ACCOUNT_BANK_NAME=#{bondReqDetail.tendereeAccountBankName,jdbcType=VARCHAR},
+        </if>
+
+        <if test="bondReqDetail.tendereeAccountBankNumber!=null and bondReqDetail.tendereeAccountBankNumber!='' ">
+            TENDEREE_ACCOUNT_BANK_NUMBER=#{bondReqDetail.tendereeAccountBankNumber,jdbcType=VARCHAR},
+        </if>
+
+        <if test="bondReqDetail.bondType!=null and bondReqDetail.bondType!='' ">
+            BOND_TYPE=#{bondReqDetail.bondType,jdbcType=VARCHAR},
+        </if>
+
+        <if test="bondReqDetail.transferFlag!=null and bondReqDetail.transferFlag!='' ">
+            TRANSFER_FLAG=#{bondReqDetail.transferFlag,jdbcType=VARCHAR},
+        </if>
+
+        <if test="bondReqDetail.tendereeBankType!=null and bondReqDetail.tendereeBankType!='' ">
+            TENDEREE_BANK_TYPE=#{bondReqDetail.tendereeBankType,jdbcType=VARCHAR},
+        </if>
+
+        <if test="bondReqDetail.tendereeProvince!=null and bondReqDetail.tendereeProvince!='' ">
+            TENDEREE_PROVINCE=#{bondReqDetail.tendereeProvince,jdbcType=VARCHAR},
+        </if>
+        <if test="bondReqDetail.tendereeCity!=null and bondReqDetail.tendereeCity!='' ">
+            TENDEREE_CITY=#{bondReqDetail.tendereeCity,jdbcType=VARCHAR},
+        </if>
+        <if test="bondReqDetail.payType!=null and bondReqDetail.payType!='' ">
+            PAY_TYPE=#{bondReqDetail.payType,jdbcType=VARCHAR},
+        </if>
+        OBJECT_VERSION_NUMBER=OBJECT_VERSION_NUMBER+1,
+        LAST_UPDATED_BY=#{cscecUser.userId},
+        LAST_UPDATE_DATE=sysdate
+        where
+        REQ_ID=#{bondReqDetail.reqId}
+    </update>
+
+    <!--查询保证金列表-->
+    <select id="getBondReqListBySearchValue" resultType="com.cscec8b.bond.module.object.BondReq">
+        select t2.* from (
+        select rownum rn , t1.* from (
+        SELECT count(1) over() total ,
+        reqId,
+        organizationId,
+        organizationName,
+        documentNumber,
+        projectName,
+        status,
+        to_char(PREPARED_DATE,'yyyy-MM-dd') preparedDate,
+        bondTypeName ,
+        bondType ,
+        applyAmount,
+        comments ,
+        preparedBy,
+        preparedByName,
+        to_char(REPAYMENT_DATE,'yyyy-MM-dd') repaymentDate,
+        applyType,
+        applyTypeName,
+        transferFlag
+
+        FROM (
+        select
+
+        fbr.REQ_ID reqId,
+        fbr.ORGANIZATION_ID organizationId,
+        sov.NAME organizationName,
+        fbr.DOCUMENT_NUMBER documentNumber,
+        fbr.PROJECT_NAME projectName,
+        fbr.STATUS status,
+        fbr.PREPARED_DATE PREPARED_DATE,
+        fbt.meaning bondTypeName ,
+        fbr.BOND_TYPE bondType ,
+        fbr.PAY_AMOUNT applyAmount,
+        fbr.COMMENTS comments ,
+        fbr.PREPARED_BY preparedBy,
+        sev.FIRST_NAME||sev.LAST_NAME preparedByName,
+        fbr.REPAYMENT_DATE REPAYMENT_DATE,
+        fbr.APPLY_TYPE applyType,
+        slv.meaning applyTypeName,
+        fbr.transfer_flag transferFlag
+        from
+        fdm.fdm_bond_reqs_t fbr,
+        STM.STM_EMPLOYEES_V sev,
+        stm.stm_organizations_v sov,
+
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_APPLY_TYPE') slv,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_TYPE') fbt
+
+        where fbr.BOND_TYPE=fbt.lookup_code(+)
+        and fbr.APPLY_TYPE=slv.lookup_code(+)
+        and fbr.PREPARED_BY=sev.employee_id(+)
+        and fbr.ORGANIZATION_ID=sov.ORGANIZATION_ID(+)
+
+        and fbr.ORGANIZATION_ID in (
+
+
+        SELECT DISTINCT V.organization_id_child organizationId
+        FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+        STM.STM_ORGANIZATIONS_V SOV
+        WHERE SOV.organization_id = V.organization_id_child
+        AND SOV.TYPE = 'CCEED5'
+        AND v.org_structure_version_id = 4061
+        CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+        START WITH v.organization_id_parent IN
+        (select sov1.org_id
+        from stm_per_assignments_v v1,
+        stm.stm_per_people_v spp1,
+        stm_organizations_v sov1
+        where v1.person_id = spp1.PERSON_ID
+        and sov1.organization_id = v1.ORGANIZATION_ID
+        and trunc(sysdate) between spp1.EFFECTIVE_START_DATE and
+        spp1.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v1.EFFECTIVE_START_DATE and
+        v1.EFFECTIVE_END_DATE
+        AND spp1.EMPLOYEE_NUMBER = #{cscecUser.userCode})
+        UNION
+
+        select SOV3.org_id organizationId
+        from stm_per_assignments_v v3, stm.stm_per_people_v spp3,
+        STM.STM_ORGANIZATIONS_V SOV3
+        where v3.person_id = spp3.PERSON_ID
+        and sov3.organization_id = v3.ORGANIZATION_ID
+        and trunc(sysdate) between spp3.EFFECTIVE_START_DATE and
+        spp3.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v3.EFFECTIVE_START_DATE and
+        v3.EFFECTIVE_END_DATE
+        and spp3.EMPLOYEE_NUMBER = #{cscecUser.userCode} )
+
+        )temp1
+
+        <where>
+            <if test="bondReq.documentNumber != null and bondReq.documentNumber != '' ">
+                and documentNumber like concat(concat('%', #{bondReq.documentNumber}),'%')
+            </if>
+            <if test="bondReq.projectName != null and bondReq.projectName != '' ">
+                and projectName like concat(concat('%', #{bondReq.projectName}),'%')
+            </if>
+            <if test="bondReq.status != null and bondReq.status != '' ">
+                and status=#{bondReq.status}
+            </if>
+            <if test="bondReq.applyType != null and bondReq.applyType != '' ">
+                and applyType=#{bondReq.applyType}
+            </if>
+            <if test="bondReq.bondType != null and bondReq.bondType != '' ">
+                and bondType=#{bondReq.bondType}
+            </if>
+
+            <if test="bondReq.organizationName != null and bondReq.organizationName != '' ">
+                and organizationName like concat(concat('%',#{bondReq.organizationName}),'%')
+            </if>
+
+            <if test="bondReq.companyId != null and bondReq.companyId != ''">
+                <if test="containChild==true">
+                    and organizationId in
+                    (SELECT DISTINCT V.organization_id_child organizationId
+                    FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+                    STM.STM_ORGANIZATIONS_V SOV
+                    WHERE SOV.organization_id = V.organization_id_child
+                    AND SOV.TYPE = 'CCEED5'
+                    AND v.org_structure_version_id = 4061
+                    CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+                    START WITH v.organization_id_parent =#{bondReq.companyId}
+                    union
+                    select #{bondReq.companyId} organizationId from dual
+                    )
+                </if>
+                <if test="containChild==false">
+                    and organizationId=#{bondReq.companyId}
+                </if>
+            </if>
+
+            <if test="bondReq.preparedDateFrom  != null and bondReq.preparedDateFrom  != ''  ">
+                and PREPARED_DATE >= to_date(#{bondReq.preparedDateFrom} ,'yyyy-mm-dd')
+            </if>
+            <if test="bondReq.preparedDateTo  != null and bondReq.preparedDateTo  != ''  ">
+                and PREPARED_DATE &lt;= to_date(#{bondReq.preparedDateTo},'yyyy-mm-dd')
+            </if>
+
+            <if test="bondReq.repaymentDateFrom  != null and bondReq.repaymentDateFrom  != ''  ">
+                and REPAYMENT_DATE >= to_date(#{bondReq.repaymentDateFrom} ,'yyyy-mm-dd')
+            </if>
+            <if test="bondReq.repaymentDateTo  != null and bondReq.repaymentDateTo  != ''  ">
+                and REPAYMENT_DATE &lt;= to_date(#{bondReq.repaymentDateTo},'yyyy-mm-dd')
+            </if>
+            <if test="bondReq.comments  != null and bondReq.comments  != ''  ">
+                and comments like concat(concat('%', #{bondReq.comments}),'%')
+            </if>
+            <if test="bondReq.searchValue!=null and bondReq.searchValue!='' ">
+                AND documentNumber||'~' || projectName || '~' || comments like
+                CONCAT(CONCAT('%',#{bondReq.searchValue}),'%')
+            </if>
+
+        </where>
+        <if test="bondReq.orderCol==null or bondReq.orderCol==''  ">
+            ORDER BY PREPARED_DATE DESC
+        </if>
+        <if test="bondReq.orderCol!=null and bondReq.orderCol!=''">
+            ORDER BY  <![CDATA[${bondReq.orderCol}]]>
+        </if>
+        <if test="bondReq.orderType!=null and bondReq.orderType!='' and bondReq.orderCol!=null and bondReq.orderCol!=''">
+            ${bondReq.orderType}
+        </if>
+        <if test="bondReq.orderCol!=null and bondReq.orderCol!=''">
+            <if test="bondReq.orderType==null or bondReq.orderType==''">
+                DESC
+            </if>
+        </if>
+        )t1
+        )t2
+        where rn >#{start,jdbcType=DECIMAL} and rn &lt;=#{end,jdbcType=DECIMAL}
+    </select>
+
+    <!--删除保证金详情-->
+    <delete id="delBondReqDetail">
+         delete from  fdm.fdm_bond_reqs_t
+         where REQ_ID=#{reqId}
+         and  STATUS IN('NEW','REJECTED')
+    </delete>
+
+    <!--查询保证金详情信息-->
+    <select id="getBondReqDetailByReqIdOrDocumentNumber"
+            resultType="com.cscec8b.bond.module.object.BondReqDetail">
+        select
+        t.REQ_ID reqId,
+        t. DOCUMENT_NUMBER documentNumber,
+        t.ORGANIZATION_ID organizationId,
+        sov.NAME organizationName,
+        t. APPLY_TYPE applyType,
+        slv.meaning applyTypeName,
+        t. PROJECT_NAME projectName,
+        t. BOND_TYPE bondType,
+        slva.meaning bondTypeName,
+        t. FINANCE_HANDLER financeHandler,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where t.FINANCE_HANDLER=v.EMPLOYEE_ID ) financeHandlerName,
+        t. MARKET_HANDLER marketHandler,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where t.MARKET_HANDLER=v.EMPLOYEE_ID ) marketHandlerName,
+        t. PROJECT_BOND_AMOUNT projectBondAmount,
+        t. PROJECT_BOND_AMOUNT_TYPE projectBondAmountType,
+        to_char(REPAYMENT_DATE,'yyyy-MM-dd') repaymentDate,
+        t. CONTRACT_AMOUNT contractAmount,
+        t. OTHER_DUTY otherDuty,
+        ( select meaning from STM.STM_LOOKUP_VALUES_V v where
+        lookup_type='FDM_BOND_REQ_OTHER_DUTY_TYPE'
+        AND t. OTHER_DUTY =v.lookup_code )otherDutyMeaning,
+        t. PAY_AMOUNT payAmount,
+        to_char(t.PAY_DATE,'yyyy-MM-dd') payDate,
+        t. PAY_DESC payDesc,
+        t. PAY_USAGE payUsage,
+        t. PAY_DUTY payDuty,
+        t. OTHER_DESC otherDesc,
+        t. TENDEREE_ACCOUNT_NAME tendereeAccountName,
+        t. TENDEREE_ACCOUNT_BANK_NAME tendereeAccountBankName,
+        t.TENDEREE_ACCOUNT_BANK_NUMBER tendereeAccountBankNumber,
+        t. FINACING_FLAG finacingFlag,
+        t. FINACING_DUTY_FLAG finacingDutyFlag,
+        t. DEL_FUND_FLAG delFundFlag,
+        t. LOAN_FLAG loanFlag,
+        t. I_S_FALG ISFlag,
+        t. MORTGAGE_FLAG mortgageFlag,
+        t.PROJECT_PAY_TYPE projectPayType,
+        slvt.meaning projectPayTypeName,
+        t. ECDS_PAY_RATE ecdsPayRate,
+        t. PROGRESS_PAY_TYPE progressPayType,
+        slvp.meaning progressPayTypeName,
+        t. PROGRESS_PAY_RATE progressPayRate,
+        t. PREPARED_BY preparedBy,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where t.PREPARED_BY=v.EMPLOYEE_ID ) preparedByName,
+        to_char(PREPARED_DATE ,'yyyy-MM-dd')preparedDate,
+        t.STATUS status,
+        ( SELECT meaning FROM STM.STM_LOOKUP_VALUES_V V
+        WHERE V.lookup_type = 'FDM_BOND_REQ_STATUS'
+        and t.STATUS= v.lookup_code ) statusMeaning,
+
+        t.INVEST_FLAG investFlag,
+        t. COMMENTS comments,
+        t.transfer_flag transferFlag,
+
+        t.TENDEREE_BANK_TYPE tendereeBankType ,
+
+        (select meaning
+        from stm.stm_lookup_values_v v
+        where v.lookup_type = 'CCEED_BANK_TYPE'
+        and v.status='Y'
+        AND t.TENDEREE_BANK_TYPE=v.lookup_code )tendereeBankTypeName,
+        TENDEREE_PROVINCE tendereeProvince,
+        TENDEREE_CITY tendereeCity,
+        PAY_TYPE payType,
+        t.attribute1 attribute1
+        from fdm.fdm_bond_reqs_t t,
+        stm.stm_organizations_v sov,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_APPLY_TYPE') slv,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_TYPE') slva,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_PROGRESS_PAY_TYPE') slvp,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_PROJECT_PAY_TYPE') slvt
+
+
+        where t.ORGANIZATION_ID=sov.ORGANIZATION_ID(+)
+        and t.APPLY_TYPE=slv.lookup_code(+)
+        and t.BOND_TYPE=slva.lookup_code(+)
+        and t.PROGRESS_PAY_TYPE=slvp.lookup_code(+)
+        and t.PROJECT_PAY_TYPE=slvt.lookup_code(+)
+
+        <if test="reqId!=null and reqId!=''">
+            and t.REQ_ID=#{reqId}
+        </if>
+        <if test="documentNumber!=null and documentNumber!=''">
+            AND t.DOCUMENT_NUMBER=#{documentNumber}
+        </if>
+
+    </select>
+
+
+    <select id="getChangeStatus" resultType="string">
+
+         SELECT STATUS,rownum FROM (
+            select h.STATUS   from fdm.fdm_bond_change_header_t  h
+            where h.REQ_ID=#{reqId}
+            order by LAST_UPDATE_DATE desc)
+         WHERE rownum=1
+    </select>
+    <!--web端查询的接口-->
+    <select id="getBondReqDetailByReqIdOrDocumentNumberWeb"
+            resultType="com.cscec8b.bond.module.object.BondReqDetail">
+        select
+        t.REQ_ID reqId,
+        t. DOCUMENT_NUMBER documentNumber,
+        t.ORGANIZATION_ID organizationId,
+        sov.NAME organizationName,
+        t. APPLY_TYPE applyType,
+        slv.meaning applyTypeName,
+        t. PROJECT_NAME projectName,
+        t. BOND_TYPE bondType,
+        slva.meaning bondTypeName,
+        t. FINANCE_HANDLER financeHandler,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where t.FINANCE_HANDLER=v.EMPLOYEE_ID ) financeHandlerName,
+        t. MARKET_HANDLER marketHandler,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where t.MARKET_HANDLER=v.EMPLOYEE_ID ) marketHandlerName,
+        t. PROJECT_BOND_AMOUNT projectBondAmount,
+        t. PROJECT_BOND_AMOUNT_TYPE projectBondAmountType,
+        to_char(REPAYMENT_DATE,'yyyy-MM-dd') repaymentDate,
+        t. CONTRACT_AMOUNT contractAmount,
+        t. OTHER_DUTY otherDuty,
+        ( select meaning from STM.STM_LOOKUP_VALUES_V v where
+        lookup_type='FDM_BOND_REQ_OTHER_DUTY_TYPE'
+        AND t. OTHER_DUTY =v.lookup_code )otherDutyMeaning,
+        t. PAY_AMOUNT payAmount,
+        to_char(t.PAY_DATE,'yyyy-MM-dd') payDate,
+        t. PAY_DESC payDesc,
+        t. PAY_USAGE payUsage,
+        t. PAY_DUTY payDuty,
+        t. OTHER_DESC otherDesc,
+        t. TENDEREE_ACCOUNT_NAME tendereeAccountName,
+        t. TENDEREE_ACCOUNT_BANK_NAME tendereeAccountBankName,
+        t.TENDEREE_ACCOUNT_BANK_NUMBER tendereeAccountBankNumber,
+        t. FINACING_FLAG finacingFlag,
+        t. FINACING_DUTY_FLAG finacingDutyFlag,
+        t. DEL_FUND_FLAG delFundFlag,
+        t. LOAN_FLAG loanFlag,
+        t. MORTGAGE_FLAG mortgageFlag,
+        t.PROJECT_PAY_TYPE projectPayType,
+        slvt.meaning projectPayTypeName,
+        t. ECDS_PAY_RATE ecdsPayRate,
+        t. PROGRESS_PAY_TYPE progressPayType,
+        slvp.meaning progressPayTypeName,
+        t. PROGRESS_PAY_RATE progressPayRate,
+        t. PREPARED_BY preparedBy,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where t.PREPARED_BY=v.EMPLOYEE_ID ) preparedByName,
+        to_char(PREPARED_DATE ,'yyyy-MM-dd')preparedDate,
+        t.STATUS status,
+        ( SELECT meaning FROM STM.STM_LOOKUP_VALUES_V V
+        WHERE V.lookup_type = 'FDM_BOND_REQ_STATUS'
+        and t.STATUS= v.lookup_code ) statusMeaning,
+
+        t.INVEST_FLAG investFlag,
+        t. COMMENTS comments,
+        change.STATUS changeStatus
+        from fdm.fdm_bond_reqs_t t,
+        stm.stm_organizations_v sov,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_APPLY_TYPE') slv,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_TYPE') slva,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_PROGRESS_PAY_TYPE') slvp,
+        (select lookup_code,meaning from stm.stm_lookup_values_t where
+        lookup_type='FDM_BOND_PROJECT_PAY_TYPE') slvt,
+
+        fdm.fdm_bond_change_header_t change
+        where t.ORGANIZATION_ID=sov.ORGANIZATION_ID(+)
+        and t.APPLY_TYPE=slv.lookup_code(+)
+        and t.BOND_TYPE=slva.lookup_code(+)
+        and t.PROGRESS_PAY_TYPE=slvp.lookup_code(+)
+        and t.PROJECT_PAY_TYPE=slvt.lookup_code(+)
+        and t.REQ_ID=change.REQ_ID(+)
+        <if test="reqId!=null and reqId!=''">
+            and t.REQ_ID=#{reqId}
+        </if>
+        <if test="documentNumber!=null and documentNumber!=''">
+            AND t.DOCUMENT_NUMBER=#{documentNumber}
+        </if>
+    </select>
+
+    <!--修改保证金状态-->
+    <update id="updateBondReqDetailStatus">
+          UPDATE
+          fdm.fdm_bond_reqs_t
+          set STATUS=#{bondReqDetail.status},
+          OBJECT_VERSION_NUMBER=OBJECT_VERSION_NUMBER+1
+          WHERE
+          REQ_ID=#{bondReqDetail.reqId}
+    </update>
+
+    <!--获取变更历史头列表-->
+    <select id="getBondChangeByReqId" resultType="com.cscec8b.bond.module.object.BondChange">
+        select
+        HEADER_ID headerId,
+        REQ_ID reqId,
+        STATUS status,
+        COMMENTS Comments,
+        to_char(LAST_UPDATE_DATE,'yyyy-MM-dd')  lastUpdateDate,
+        CREATED_BY createdBy,
+         (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+         where t.CREATED_BY=v.EMPLOYEE_ID ) createdByName,
+         APPROVER approver
+        from fdm.fdm_bond_change_header_t t
+        where t.REQ_ID=#{reqId}
+        order by LAST_UPDATE_DATE
+    </select>
+
+
+    <delete id="delBondChangeByHeaderId">
+      delete   FROM
+       fdm.fdm_bond_change_header_t t
+       where HEADER_ID=#{headerId}
+    </delete>
+    <!--获取变更记录详情-->
+    <select id="getBondChangeDetailsByHeaderId" resultType="com.cscec8b.bond.module.object.BondChangeDetail">
+        select
+        LINE_ID lineId,
+        HEADER_ID headerId,
+        t.COLUMN_NAME columnName,
+        COLUMN_SOURCE_VALUE columnSourceValue,
+        COLUMN_SOURCE_VALUE_DESC columnSourceValueDesc,
+        decode(t.COLUMN_NAME,
+         'TENDEREE_ACCOUNT_NAME' ,'开户单位名称',
+         'TENDEREE_ACCOUNT_BANK_NAME','开户银行名称',
+         'TENDEREE_ACCOUNT_BANK_NUMBER','开户银行账号',
+         'PAY_USAGE','用途',
+         'REPAYMENT_DATE','约定还款日期',
+         'BOND_TYPE','保证金类型',
+         'TRANSFER_FLAG','转结标记位',
+         'TENDEREE_BANK_TYPE','招标方银行类型',
+         'TENDEREE_PROVINCE' ,'招标方省份信息',
+         'TENDEREE_CITY' ,'招标方城市信息',
+         'PAY_TYPE','支付方式'
+         ) columnNameDesc,
+        COLUMN_TARGET_VALUE columnTargetValue,
+        COLUMN_TARGET_VALUE_DESC columnTargetValueDesc,
+        to_char(LAST_UPDATE_DATE,'yyyy-MM-dd')lastUpdateDate
+        from fdm.fdm_bond_change_lines_t t
+        where t.HEADER_ID=#{headerId}
+        AND COLUMN_NAME not in ('TRANSFER_FLAG')
+        order by LAST_UPDATE_DATE
+    </select>
+
+
+    <!--新增保证金变更记录-->
+    <insert id="insertBondChange">
+    insert into  fdm.fdm_bond_change_header_t(
+    HEADER_ID,
+    REQ_ID,
+    STATUS,
+    COMMENTS,
+    OBJECT_VERSION_NUMBER,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATED_BY,
+    LAST_UPDATE_DATE)
+    values (
+    #{bondChange.headerId},
+    #{bondChange.reqId},
+    #{bondChange.status},
+    #{bondChange.Comments},
+    1,
+    sysdate,
+    #{cscecUser.userId},
+    #{cscecUser.userId},
+    sysdate
+ )
+    </insert>
+    <update id="updateBondChangeDetail">
+     update   fdm.fdm_bond_change_header_t
+    set APPROVER=#{bondChange.approver,jdbcType=VARCHAR},
+        STATUS=#{bondChange.status,jdbcType=VARCHAR}
+    where HEADER_ID=#{bondChange.headerId}
+</update>
+    <!--获取指定reqId 状态正在提交状态的保证金变更单-->
+
+    <select id="getBondChangeByStatus" resultType="com.cscec8b.bond.module.object.BondChange">
+      select
+        HEADER_ID headerId,
+        REQ_ID reqId,
+        STATUS status,
+        COMMENTS Comments,
+        to_char(LAST_UPDATE_DATE,'yyyy-MM-dd')  lastUpdateDate
+        from fdm.fdm_bond_change_header_t t
+        where t.REQ_ID=#{reqId}
+        AND  STATUS='SUBMITED'
+        and rownum=1
+    </select>
+
+    <!--新增记录详情-->
+    <insert id="insertBondChangeDetail">
+     insert into fdm.fdm_bond_change_lines_t t(
+     LINE_ID,
+     HEADER_ID,
+     t.COLUMN_NAME,
+     COLUMN_SOURCE_VALUE,
+     COLUMN_SOURCE_VALUE_DESC,
+     COLUMN_TARGET_VALUE,
+     COLUMN_TARGET_VALUE_DESC,
+     OBJECT_VERSION_NUMBER,
+     CREATION_DATE,
+     CREATED_BY,
+     LAST_UPDATED_BY,
+     LAST_UPDATE_DATE,
+     COLUMN_TYPE
+     )
+     values(
+     #{bondChangeDetail.lineId},
+     #{bondChangeDetail.headerId},
+     #{bondChangeDetail.columnName,jdbcType=VARCHAR},
+     #{bondChangeDetail.columnSourceValue,jdbcType=VARCHAR},
+     #{bondChangeDetail.columnSourceValueDesc,jdbcType=VARCHAR},
+     #{bondChangeDetail.columnTargetValue,jdbcType=VARCHAR},
+     #{bondChangeDetail.columnTargetValueDesc,jdbcType=VARCHAR},
+     1,
+     sysdate,
+     #{cscecUser.userId},
+     #{cscecUser.userId},
+     sysdate,
+     #{bondChangeDetail.columnType,jdbcType=VARCHAR}
+     )
+    </insert>
+
+    <!--经办人列表-->
+    <select id="getOperatorsLikeDeptName" resultType="com.cscec8b.bond.module.object.Operator">
+      select
+
+      EMPLOYEE_ID employeeId,
+      EMPLOYEE_NUM operatorId,
+      FIRST_NAME||LAST_NAME operatorName
+     from  stm.stm_employees_v
+     where employee_id in
+     (select employee_code
+       from df_fnd.fnd_org_employees foe
+        where foe.org_code=
+       (select organization_id
+        from  (
+               select * from stm_organizations_v sov
+               where sov.org_id=#{organizationId}
+               and sov.TYPE = 'CCEED6'
+            )t
+        where t.NAME like concat(concat('%',#{deptName}),'%')
+     )
+    and foe.enabled_flag = 'Enabled')
+    </select>
+
+    <update id="UpdateBondreqId" parameterType="int">
+        update fdm.fdm_bond_reqs_t t
+        set
+        t.bond_type = 'PERFORMANCE_BOND',
+        t.transfer_flag = 'Y'
+        where t.req_id = #{reqId}
+    </update>
+
+    <select id="getOrgUser" resultType="com.cscec8b.bond.module.object.BondPayment">
+        select DISTINCT
+        f.company_id companyId,
+        f.finance_handler financeHandler,
+        f.market_handler marketHandler,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where f.FINANCE_HANDLER=v.EMPLOYEE_ID ) financeHandlerName,
+        ( select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where f.MARKET_HANDLER=v.EMPLOYEE_ID ) marketHandlerName
+        from fdm.fdm_bond_org_pay_defs_t f,
+        stm_segment_values_v v,
+        stm_organizations_v ov
+        where
+        f.account_segment = v.SEGMENT_CODE(+)and
+        f.company_id = #{orgId}
+    </select>
+
+
+    <select id="getBondBankTypeName" resultType="com.cscec8b.common.module.object.LookUpRecord">
+       select DISTINCT  meaning lookUpValue,
+
+       lookup_code lookUpCode
+        from stm.stm_lookup_values_v v
+        where v.lookup_type = 'CCEED_BANK_TYPE'
+        and v.status='Y'
+        AND v.lookup_code=#{BondBankType}
+    </select>
+
+
+    <insert id="insertMessage">
+        <selectKey order="BEFORE" resultType="Integer" keyProperty="message.messageId">
+            SELECT fdm.FDM_BOND_MESSAGES_S.NEXTVAL FROM DUAL
+        </selectKey>
+        insert into fdm.FDM_BOND_MESSAGES_T (
+        MESSAGE_ID,
+        SOURCE_ID,
+        SOURCE_TYPE,
+        MESSAGE_PERSON,
+        MESSAGE_CONTENT,
+        CREATE_DATE,
+        CREATE_BY,
+        LAST_UPDATE_DATE,
+        LAST_UPDATE_BY,
+        OBJECT_VERSION_NUMBER,
+        STATUS,
+        APPROVAL_NODE
+        )
+        values (
+        #{message.messageId,jdbcType=DECIMAL},
+        #{message.sourceId,jdbcType=DECIMAL},
+        #{message.sourceType,jdbcType=VARCHAR},
+        #{message.messagePerson,jdbcType=VARCHAR},
+        #{message.messageContent,jdbcType=VARCHAR},
+        sysdate,
+        #{cscecUser.userId},
+        sysdate,
+        #{cscecUser.userId},
+        1,
+        #{message.status,jdbcType=DECIMAL},
+        #{message.approvalNode,jdbcType=VARCHAR}
+        )
+    </insert>
+
+
+    <update id="updateMessage">
+        update fdm.FDM_BOND_MESSAGES_T
+        <set>
+            <if test="message.messagePerson != null and message.messagePerson !='' ">
+                MESSAGE_PERSON = #{message.messagePerson,jdbcType=VARCHAR},
+            </if>
+            <if test="message.messageContent != null and message.messageContent !=''">
+                MESSAGE_CONTENT = #{message.messageContent,jdbcType=VARCHAR},
+            </if>
+            LAST_UPDATE_DATE = SYSDATE,
+            <if test="cscecUser.userId != null">
+                LAST_UPDATE_BY = #{cscecUser.userId,jdbcType=VARCHAR},
+            </if>
+            OBJECT_VERSION_NUMBER = OBJECT_VERSION_NUMBER+1,
+        </set>
+        where MESSAGE_ID = #{message.messageId,jdbcType=DECIMAL}
+    </update>
+
+    <!--获取留言列表-->
+    <select id="getMessages" resultType="com.cscec8b.bond.module.object.Message">
+    select
+    MESSAGE_ID  messageId,
+    SOURCE_ID sourceId,
+    SOURCE_TYPE sourceType,
+    MESSAGE_PERSON messagePerson,
+    (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+    where v.EMPLOYEE_NUM=MESSAGE_PERSON
+    )messagePersonName,
+    MESSAGE_CONTENT messageContent,
+    to_char(CREATE_DATE,'yyyy-MM-dd') createDate,
+    CREATE_BY createBy,
+    to_char(LAST_UPDATE_DATE,'yyyy-MM-dd')  lastUpdateDate,
+    LAST_UPDATE_BY lastUpdateBy,
+    STATUS status,
+    APPROVAL_NODE approvalNode
+    from fdm.FDM_BOND_MESSAGES_T
+    where SOURCE_ID =#{sourceId}
+    AND SOURCE_TYPE =#{sourceType,jdbcType=VARCHAR}
+    order by  MESSAGE_ID
+    </select>
+    <!--流程审批通过后操作-->
+    <select id="callProcessComplete" parameterType="java.util.Map" statementType="CALLABLE">
+        {
+        call
+        stm.stm_fdm_bond_common_pkg.PROCESS_BOND_COMPLETE_INVOKE(
+                                        #{reqId,mode=IN,jdbcType=NUMERIC},
+                                        #{resultFlag,mode=OUT,jdbcType=VARCHAR},
+                                        #{errMsg,mode=OUT,jdbcType=VARCHAR}
+                                        )
+        }
+    </select>
+</mapper>

@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cscec8b.bond.module.dao.ExportExcelDao">
+    <!--获取保证金台账的集合-->
+    <select id="getTallyDetailderive" resultType="com.cscec8b.bond.module.object.BondTallyDetail">
+        select count(1) over() total, m.* from (
+        select
+        brt. reqId,
+        brt. reqDocumentNumber,
+        brt. organizationId,
+        brt. organizationName,
+        brt. applyType,
+        brt. applyTypeName,
+        brt. projectName,
+        brt. bondType,
+        brt. bondTypeName,
+        brt. financeHandler,
+        brt. financeHandlerName,
+        brt. marketHandler,
+        brt. marketHandlerName,
+        to_char(brt.repaymentDate,'yyyy-MM-dd')repaymentDate,
+        brt. payAmount,
+        to_char(brt.payDate,'yyyy-MM-dd')payDate,
+        brt. payDesc,
+        brt. payUsage,
+        brt. tendereeAccountName,
+        brt. tendereeAccountBankName,
+        brt. tendereeAccountBankNumber,
+        brt. reqPreparedBy,
+        brt. reqPreparedByName,
+        to_char(brt.rePreparedDate,'yyyy-MM-dd') rePreparedDate,
+        brt. documentStatus,
+        brt.lastUpdateDate,
+        brt.payType,
+        bcht.headerId,
+        bcht.documentNumber ,
+        to_char(bcht.preparedDate,'yyyy-MM-dd') preparedDate,
+        bcht.preparedBy,
+        bcht.preparedByName,
+        bcht.claimAmount,
+        bcht.claimStatus,
+        bcht.repaymentTenderee,
+        bcht.repaymentBankNumber,
+        to_char(bcht.claimDate,'yyyy-MM-dd') claimDate,
+
+        decode( bcht.claimStatus,null,floor(to_number(sysdate-brt.repaymentDate)
+        ),floor(to_number(bcht.claimDate-brt.repaymentDate) ))overDays,
+
+        decode( bcht.claimStatus,null,0-brt.payAmount,bcht.claimAmount-brt.payAmount) balance
+
+        ,
+        brt.CbsPayNumber,
+        concat(brt.ecdsPayRate,'%') as ecdsPayRate,
+        brt.PROJECT_PAY_TYPE projectPayType,
+        concat(brt.progressPayRate,'%') as progressPayRate,
+        brt.PROGRESS_PAY_TYPE progressPayType
+        from
+        (
+        select
+        t.REQ_ID reqId ,
+
+        (select BANK_SEQ_NUMBER
+        from fdm.fdm_bond_cbs_payments_t v
+        where v.SOURCE_ID = t.REQ_ID
+        and SOURCE_TYPE = 'BOND'
+        and REQ_NODE= decode( t.APPLY_TYPE,'BUREAU_AGENT','局总部付款','NOT_BUREAU_AGENT','二级单位付款',t.APPLY_TYPE)
+        and status='推送成功'
+        and rownum =1
+        ) CbsPayNumber,
+
+        t.DOCUMENT_NUMBER reqDocumentNumber,
+        t.ORGANIZATION_ID organizationId,
+        sov.NAME organizationName,
+        t.APPLY_TYPE applyType,
+        slv.meaning applyTypeName,
+        t.PROJECT_NAME projectName,
+        t.BOND_TYPE bondType,
+        slva.meaning bondTypeName,
+        t.FINANCE_HANDLER financeHandler,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.FINANCE_HANDLER=v.EMPLOYEE_ID) financeHandlerName,
+        t.MARKET_HANDLER marketHandler,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.MARKET_HANDLER=v.EMPLOYEE_ID) marketHandlerName,
+        t.PROJECT_BOND_AMOUNT projectBondAmount,
+        t.REPAYMENT_DATE repaymentDate,
+        t.CONTRACT_AMOUNT contractAmount,
+        t.OTHER_DUTY otherDuty,
+        t.PAY_AMOUNT payAmount,
+        t.PAY_DATE payDate,
+        t.PAY_DESC payDesc,
+        t.PAY_USAGE payUsage,
+        t.PAY_DUTY payDuty,
+        t.OTHER_DESC otherDesc,
+        t.TENDEREE_ACCOUNT_NAME tendereeAccountName,
+        t.TENDEREE_ACCOUNT_BANK_NAME tendereeAccountBankName,
+        t.TENDEREE_ACCOUNT_BANK_NUMBER tendereeAccountBankNumber,
+        t.FINACING_FLAG,
+        t.FINACING_DUTY_FLAG,
+        t.DEL_FUND_FLAG,
+        t.LOAN_FLAG,
+        t.MORTGAGE_FLAG,
+        t.PROJECT_PAY_TYPE,
+        nvl(t.ECDS_PAY_RATE,0) as ecdsPayRate ,
+        t.PROGRESS_PAY_TYPE,
+        nvl(t.PROGRESS_PAY_RATE,0) as progressPayRate,
+        t.PREPARED_BY reqPreparedBy ,
+        (select v.FIRST_NAME||v.LAST_NAME
+        from stm.stm_employees_v v
+        where t.PREPARED_BY =v.EMPLOYEE_ID) reqPreparedByName,
+        t.PREPARED_DATE rePreparedDate,
+        t.STATUS documentStatus,
+        t.INVEST_FLAG,
+        t.COMMENTS comments,
+        t.LAST_UPDATE_DATE   lastUpdateDate,
+        t.PAY_TYPE payType
+        from fdm.fdm_bond_reqs_t t,
+        stm.stm_organizations_v sov,
+
+        (select lookup_code,meaning from stm.stm_lookup_values_t
+        where lookup_type='FDM_BOND_APPLY_TYPE') slv,
+
+        (select lookup_code,meaning from stm.stm_lookup_values_t
+        where lookup_type='FDM_BOND_TYPE') slva
+        where
+        <if test="cscecUser.orgId=='102'.toString()">
+            t.status='APPROVED'
+        </if>
+        <if test="cscecUser.orgId!=102">
+            t.status in ('SUBMITED','APPROVED')
+        </if>
+        and t.ORGANIZATION_ID=sov.ORGANIZATION_ID(+)
+        and t.bond_type=slva.lookup_code(+)
+        and t.apply_type=slv.lookup_code(+)
+
+        ) brt,
+        (select
+        ht. HEADER_ID headerId,
+        ht. DOCUMENT_NUMBER documentNumber,
+        ht.REQ_ID reqId,
+        ht.PREPARED_DATE preparedDate,
+        ht.PREPARED_BY preparedBy,
+        (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where ht.PREPARED_BY=v.EMPLOYEE_ID ) preparedByName,
+        ht. CLAIM_AMOUNT claimAmount,
+        ht. STATUS claimStatus,
+        ht.REPAYMENT_TENDEREE repaymentTenderee,
+        ht. REPAYMENT_BANK_NUMBER repaymentBankNumber,
+        ht. CLAIM_DATE claimDate
+
+        from
+        fdm.FDM_BOND_CLAIM_HEADER_T ht
+
+        where ht.STATUS in('SUBMITED','APPROVED')
+
+
+        ) bcht
+
+        where brt.reqId=bcht.reqId(+)
+
+        and organizationId in (
+        SELECT DISTINCT V.organization_id_child organizationId
+        FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+        STM.STM_ORGANIZATIONS_V SOV
+        WHERE SOV.organization_id = V.organization_id_child
+        AND SOV.TYPE = 'CCEED5'
+        AND v.org_structure_version_id = 4061
+        CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+        START WITH v.organization_id_parent IN
+        (select sov1.org_id
+
+        from stm_per_assignments_v v1,
+        stm.stm_per_people_v spp1,
+        stm_organizations_v sov1
+        where v1.person_id = spp1.PERSON_ID
+        and sov1.organization_id = v1.ORGANIZATION_ID
+        and trunc(sysdate) between spp1.EFFECTIVE_START_DATE and
+        spp1.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v1.EFFECTIVE_START_DATE and
+        v1.EFFECTIVE_END_DATE
+        AND spp1.EMPLOYEE_NUMBER =#{cscecUser.userCode})
+        UNION
+
+        select SOV3.org_id organizationId
+        from stm_per_assignments_v v3, stm.stm_per_people_v spp3,
+        STM.STM_ORGANIZATIONS_V SOV3
+        where v3.person_id = spp3.PERSON_ID
+        and sov3.organization_id = v3.ORGANIZATION_ID
+        and trunc(sysdate) between spp3.EFFECTIVE_START_DATE and
+        spp3.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v3.EFFECTIVE_START_DATE and
+        v3.EFFECTIVE_END_DATE
+        and spp3.EMPLOYEE_NUMBER = #{cscecUser.userCode}
+        )
+        ) m
+        <where>
+            <if test="bondTally.documentNumber!=null and bondTally.documentNumber!='' ">
+                and documentNumber like concat(concat('%', #{bondTally.documentNumber}),'%')
+            </if>
+            <if test="bondTally.reqDocumentNumber!=null and bondTally.reqDocumentNumber!='' ">
+                and reqDocumentNumber like concat(concat('%', #{bondTally.reqDocumentNumber}),'%')
+            </if>
+            <if test="bondTally.applyTypeName!=null and bondTally.applyTypeName!='' ">
+                and applyTypeName=#{bondTally.applyTypeName}
+            </if>
+            <if test="bondTally.documentStatus!=null and bondTally.documentStatus!='' ">
+                and documentStatus=#{bondTally.documentStatus}
+            </if>
+            <if test="bondTally.applyType!=null and bondTally.applyType!='' ">
+                and applyType=#{bondTally.applyType}
+            </if>
+
+            <if test="bondTally.isOverdue=='Y'.toString() ">
+                and overDays>0
+            </if>
+            <if test="bondTally.isOverdue=='N'.toString() ">
+                and overDays&lt;=0
+            </if>
+
+            <if test="bondTally.claimStatus!=null and bondTally.claimStatus!='' ">
+                <if test="bondTally.claimStatus=='NOAPPROVED'.toString()">
+                    AND claimStatus IS NULL
+                </if>
+                <if test="bondTally.claimStatus!='NOAPPROVED'">
+                    AND claimStatus =#{bondTally.claimStatus}
+                </if>
+            </if>
+
+
+            <if test="bondTally.bondTypeName!=null and bondTally.bondTypeName!='' ">
+                and bondTypeName=#{bondTally.bondTypeName}
+            </if>
+            <if test="bondTally.bondType!=null and bondTally.bondType!='' ">
+                and bondType=#{bondTally.bondType}
+            </if>
+            <if test="bondTally.organizationName  != null and bondTally.organizationName  != ''  ">
+                and organizationName=#{bondTally.organizationName}
+            </if>
+
+
+            <if test="bondTally.organizationId != null and bondTally.organizationId != ''">
+                <if test="containChild==true">
+                    and organizationId in
+                    (SELECT DISTINCT V.organization_id_child organizationId
+                    FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+                    STM.STM_ORGANIZATIONS_V SOV
+                    WHERE SOV.organization_id = V.organization_id_child
+                    AND SOV.TYPE = 'CCEED5'
+                    AND v.org_structure_version_id = 4061
+                    CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+                    START WITH v.organization_id_parent =#{bondTally.organizationId}
+                    union
+                    select #{bondTally.organizationId} organizationId from dual
+                    )
+                </if>
+                <if test="containChild==false">
+                    and organizationId=#{bondTally.organizationId}
+                </if>
+            </if>
+
+            <if test="bondTally.projectName  != null and bondTally.projectName  != ''  ">
+                and projectName like concat(concat('%', #{bondTally.projectName}),'%')
+            </if>
+            <if test="bondTally.financeHandlerName  != null and bondTally.financeHandlerName  != ''  ">
+                and financeHandlerName=#{bondTally.financeHandlerName}
+            </if>
+            <if test="bondTally.marketHandlerName  != null and bondTally.marketHandlerName  != ''  ">
+                and marketHandlerName=#{bondTally.marketHandlerName}
+            </if>
+
+        </where>
+        <if test="bondTally.orderCol==null or bondTally.orderCol==''  ">
+            ORDER BY lastUpdateDate DESC
+        </if>
+        <if test="bondTally.orderCol!=null and bondTally.orderCol!=''">
+            ORDER BY  <![CDATA[${bondTally.orderCol}]]>
+        </if>
+        <if test="bondTally.orderType!=null and bondTally.orderType!='' and bondTally.orderCol!=null and bondTally.orderCol!=''">
+            ${bondTally.orderType}
+        </if>
+        <if test="bondTally.orderCol!=null and bondTally.orderCol!=''">
+            <if test="bondTally.orderType==null or bondTally.orderType==''">
+                DESC
+            </if>
+        </if>
+    </select>
+</mapper>

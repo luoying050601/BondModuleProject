@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cscec8b.bond.module.dao.BondClaimApiDao">
+    <!--插入保证金认领详情-->
+    <insert id="insertBondClaimDetail">
+        insert into
+        fdm.FDM_BOND_CLAIM_HEADER_T
+        (HEADER_ID,
+        DOCUMENT_NUMBER,
+        REQ_ID,
+        PREPARED_DATE,
+        PREPARED_BY,
+        ORGANIZATION_ID,
+        CLAIM_AMOUNT,
+        COMMENTS,
+        STATUS,
+        REPAYMENT_TENDEREE,
+        REPAYMENT_BANK_NUMBER,
+
+        OBJECT_VERSION_NUMBER,
+        CREATION_DATE,
+        CREATED_BY,
+        LAST_UPDATED_BY,
+        LAST_UPDATE_DATE,
+        CLAIM_DATE)
+        values
+        (
+        #{bondClaimDetail.headerId,jdbcType=NUMERIC},
+        #{bondClaimDetail.documentNumber,jdbcType=VARCHAR},
+        #{bondClaimDetail.reqId,jdbcType=NUMERIC},
+        to_date(#{bondClaimDetail.preparedDate},'yyyy-mm-dd'),
+        #{cscecUser.userId},
+        #{bondClaimDetail.organizationId},
+        #{bondClaimDetail.claimAmount,jdbcType=NUMERIC},
+        #{bondClaimDetail.comments,jdbcType=VARCHAR},
+        #{bondClaimDetail.status,jdbcType=VARCHAR},
+        #{bondClaimDetail.repaymentTenderee,jdbcType=VARCHAR},
+        #{bondClaimDetail.repaymentBankNumber,jdbcType=VARCHAR},
+        1,
+        sysdate,
+        #{cscecUser.userId,jdbcType=NUMERIC},
+        #{cscecUser.userId,jdbcType=NUMERIC},
+        sysdate,
+        sysdate
+        )
+    </insert>
+    <!--修改保证金认领详情-->
+    <update id="updateBondClaimDetail">
+        update fdm.FDM_BOND_CLAIM_HEADER_T
+        set
+        REQ_ID=#{bondClaimDetail.reqId},
+        PREPARED_DATE =to_date(#{bondClaimDetail.preparedDate},'yyyy-mm-dd'),
+        PREPARED_BY =#{cscecUser.userId},
+        <if test="bondClaimDetail.organizationId!=null and bondClaimDetail.organizationId!='' ">
+            ORGANIZATION_ID=#{bondClaimDetail.organizationId},
+        </if>
+        <if test="bondClaimDetail.organizationId==null or bondClaimDetail.organizationId=='' ">
+            ORGANIZATION_ID =#{cscecUser.orgId},
+        </if>
+        CLAIM_AMOUNT = #{bondClaimDetail.claimAmount,jdbcType=NUMERIC},
+        COMMENTS = #{bondClaimDetail.comments,jdbcType=VARCHAR},
+        STATUS = #{bondClaimDetail.status,jdbcType=VARCHAR},
+        REPAYMENT_TENDEREE = #{bondClaimDetail.repaymentTenderee,jdbcType=VARCHAR},
+        REPAYMENT_BANK_NUMBER = #{bondClaimDetail.repaymentBankNumber,jdbcType=VARCHAR},
+        OBJECT_VERSION_NUMBER = OBJECT_VERSION_NUMBER+1,
+        LAST_UPDATED_BY = #{cscecUser.userId,jdbcType=NUMERIC},
+        CLAIM_DATE =sysdate,
+        LAST_UPDATE_DATE=sysdate
+        <where>
+            <if test="bondClaimDetail.documentNumber!=null and bondClaimDetail.documentNumber!=''">
+                AND DOCUMENT_NUMBER=#{bondClaimDetail.documentNumber}
+            </if>
+            <if test="bondClaimDetail.headerId!=null and bondClaimDetail.headerId!=''">
+                AND HEADER_ID=#{bondClaimDetail.headerId}
+            </if>
+        </where>
+    </update>
+    <!--删除保证金认领头-->
+    <delete id="delBondClaimDetail">
+         delete from fdm.FDM_BOND_CLAIM_HEADER_T
+         where
+         HEADER_ID =#{headerId}
+    </delete>
+    <!--插入行-->
+    <insert id="insertBondClaimLine">
+      insert into fdm.FDM_BOND_CLAIM_LINES_T
+      (LINE_ID,
+      HEADER_ID,
+      BANK_SEQ_NUMBER,
+      AMOUNT,
+      PAY_BANK_NUMBER,
+       ACCOUNT_BANK_NAME,
+      ACCOUNT_BANK_NUMBER,
+       ACCOUNT_NAME,
+        TRANS_DATETIME,
+      OBJECT_VERSION_NUMBER,
+       CREATION_DATE,
+        CREATED_BY,
+      LAST_UPDATED_BY,
+       LAST_UPDATE_DATE,
+       ATTRIBUTE1,
+       TRANS_ID
+      )
+      values (
+       #{bondClaimLine.lineId,jdbcType=NUMERIC},
+       #{bondClaimLine.headerId,jdbcType=NUMERIC},
+       #{bondClaimLine.bankSeqNumber,jdbcType=VARCHAR},
+       #{bondClaimLine.amount,jdbcType=DECIMAL},
+       #{bondClaimLine.payBankNumber,jdbcType=VARCHAR},
+       #{bondClaimLine.accountBankName,jdbcType=VARCHAR},
+       #{bondClaimLine.accountBankNumber,jdbcType=VARCHAR},
+       #{bondClaimLine.accountName,jdbcType=VARCHAR},
+       #{bondClaimLine.transDatetime,jdbcType=VARCHAR},
+       1 ,
+       sysdate,
+       #{cscecUser.userId,jdbcType=DECIMAL},
+       #{cscecUser.userId,jdbcType=TIMESTAMP},
+       sysdate,
+       #{bondClaimLine.purpose,jdbcType=VARCHAR},
+       #{bondClaimLine.transId,jdbcType=VARCHAR}
+      )
+    </insert>
+    <!--修改保证金的行信息-->
+    <update id="updateBondClaimLine">
+      update fdm.FDM_BOND_CLAIM_LINES_T
+      set
+      HEADER_ID = #{bondClaimLine.headerId,jdbcType=DECIMAL},
+      BANK_SEQ_NUMBER = #{bondClaimLine.bankSeqNumber,jdbcType=VARCHAR},
+      AMOUNT = #{bondClaimLine.amount,jdbcType=DECIMAL},
+      PAY_BANK_NUMBER = #{bondClaimLine.payBankNumber,jdbcType=VARCHAR},
+      ACCOUNT_BANK_NAME = #{bondClaimLine.accountBankName,jdbcType=VARCHAR},
+      ACCOUNT_BANK_NUMBER = #{bondClaimLine.accountBankNumber,jdbcType=VARCHAR},
+      ACCOUNT_NAME = #{bondClaimLine.accountName,jdbcType=VARCHAR},
+      TRANS_DATETIME = #{bondClaimLine.transDatetime,jdbcType=VARCHAR},
+      ATTRIBUTE1=#{bondClaimLine.purpose,jdbcType=VARCHAR},
+      OBJECT_VERSION_NUMBER = OBJECT_VERSION_NUMBER+1,
+      LAST_UPDATED_BY = #{cscecUser.userId,jdbcType=DECIMAL},
+      LAST_UPDATE_DATE= sysdate,
+      TRANS_ID = #{bondClaimLine.transId,jdbcType=VARCHAR}
+      where
+      LINE_ID=#{bondClaimLine.lineId}
+    </update>
+    <!--删除保证金的行信息-->
+    <delete id="delBondClaimLineByLineId">
+     delete from fdm.FDM_BOND_CLAIM_LINES_T
+     where
+     LINE_ID =#{lineId}
+    </delete>
+    <delete id="delBondClaimLineByHeaderId">
+     delete from fdm.FDM_BOND_CLAIM_LINES_T
+     where
+     HEADER_ID =#{headerId}
+    </delete>
+
+
+    <!--获取保证认领的 详细信息-->
+    <select id="getBondClaimDetailByDocumentNumber" resultType="com.cscec8b.bond.module.object.BondClaimDetail">
+         select
+         bcht.HEADER_ID headerId,
+         bcht.DOCUMENT_NUMBER documentNumber,
+         bcht.REQ_ID reqId,
+
+         to_char(bcht.PREPARED_DATE,'yyyy-mm-dd') preparedDate,
+
+         bcht.PREPARED_BY preparedBy,
+         (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+         where bcht.PREPARED_BY=v.EMPLOYEE_ID ) preparedByName,
+
+         bcht.ORGANIZATION_ID organizationId,
+         sov.NAME organizationName,
+         bcht.CLAIM_AMOUNT claimAmount,
+         bcht.COMMENTS comments,
+         bcht.STATUS status,
+         ( SELECT meaning FROM STM.STM_LOOKUP_VALUES_V V
+          WHERE V.lookup_type = 'FDM_BOND_REQ_STATUS'
+          and bcht.STATUS= v.lookup_code ) statusMeaning,
+         bcht.REPAYMENT_TENDEREE repaymentTenderee,
+         bcht.REPAYMENT_BANK_NUMBER repaymentBankNumber,
+
+         to_char(bcht.CLAIM_DATE,'yyyy-mm-dd')claimDate,
+
+
+        fbrt.ORGANIZATION_ID reqOrganizationId,
+        (SELECT NAME  FROM   stm.stm_organizations_v ov
+           WHERE   fbrt.ORGANIZATION_ID=ov.ORGANIZATION_ID
+           and rownum=1
+        )reqOrganizationName,
+        fbrt.DOCUMENT_NUMBER reqDocumentNumber,
+        fbrt.PROJECT_NAME projectName,
+        fbrt.TENDEREE_ACCOUNT_NAME tendereeAccountName,
+        fbrt.TENDEREE_ACCOUNT_BANK_NAME tendereeAccountBankName,
+        fbrt.TENDEREE_ACCOUNT_BANK_NUMBER tendereeAccountBankNumber,
+        fbrt.PAY_AMOUNT payAmount,
+        fbrt.APPLY_TYPE applyType,
+        slv.meaning  applyTypeName ,
+        fbrt.BOND_TYPE bondType,
+        slva.meaning  bondTypeName ,
+
+        fbrt.FINANCE_HANDLER financeHandler ,
+        (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where fbrt.FINANCE_HANDLER=v.EMPLOYEE_ID ) financeHandlerName,
+        fbrt.MARKET_HANDLER marketHandler,
+        (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where fbrt.MARKET_HANDLER=v.EMPLOYEE_ID ) marketHandlerName
+
+        from  fdm.FDM_BOND_CLAIM_HEADER_T bcht,
+              fdm.fdm_bond_reqs_t fbrt,
+              stm.stm_organizations_v sov,
+             (select lookup_code,meaning from stm.stm_lookup_values_t
+              where  lookup_type='FDM_BOND_APPLY_TYPE') slv,
+              (select lookup_code,meaning from stm.stm_lookup_values_t
+               where lookup_type='FDM_BOND_TYPE') slva
+
+        where  bcht.REQ_ID=fbrt.REQ_ID(+)
+
+           and    bcht.ORGANIZATION_ID=sov.ORGANIZATION_ID(+)
+           and   fbrt.APPLY_TYPE=slv.lookup_code(+)
+           and    fbrt.BOND_TYPE=slva.lookup_code(+)
+           and bcht.DOCUMENT_NUMBER=#{documentNumber}
+    </select>
+    <!--根据外键获取单据号-->
+    <select id="getBondClaimDetailByReqId" resultType="string">
+     select DOCUMENT_NUMBER
+     from
+     fdm.FDM_BOND_CLAIM_HEADER_T
+     where REQ_ID=#{reqId}
+
+   </select>
+
+    <!--获取未被提交的 未被审批的-->
+    <select id="getBondClaimDetailDocumentNumber" resultType="string">
+     select DOCUMENT_NUMBER
+     from
+     fdm.FDM_BOND_CLAIM_HEADER_T
+     where REQ_ID=#{reqId}
+     and STATUS in('SUBMITED','APPROVED')
+     and rownum=1
+   </select>
+    <!--根据保证认领的头 主键 获取 保证金行列表信息-->
+    <select id="getBondClaimLineByHeaderId" resultType="com.cscec8b.bond.module.object.BondClaimLine">
+     SELECT
+     LINE_ID lineId,
+     HEADER_ID headerId,
+     BANK_SEQ_NUMBER bankSeqNumber,
+     AMOUNT amount,
+     PAY_BANK_NUMBER payBankNumber,
+     ACCOUNT_BANK_NAME accountBankName,
+     ACCOUNT_BANK_NUMBER accountBankNumber,
+     ACCOUNT_NAME accountName,
+     TRANS_DATETIME transDatetime,
+     ATTRIBUTE1 purpose,
+     TRANS_ID transId
+
+     FROM  fdm.FDM_BOND_CLAIM_LINES_T t
+     where t.HEADER_ID=#{headerId}
+     order by amount desc
+    </select>
+
+
+    <!--多字段分页查询保证金概要信息列表-->
+    <select id="getBondClaimListBySearchValue" resultType="com.cscec8b.bond.module.object.BondClaimSimple">
+        select * from (
+        select temp.*,rownum rn
+        from (
+
+        select count(1) over() total ,
+        headerId,
+        documentNumber,
+        to_char(PREPARED_DATE,'yyyy-MM-dd') preparedDate,
+        preparedBy,
+        preparedByName,
+        organizationId,
+        organizationName,
+        claimAmount,
+        comments,
+        status,
+        CREATION_DATE,
+        reqDocumentNumber,
+        reqOrganizationId,
+        reqOrganizationName,
+        projectName,
+        payAmount
+
+        from (
+        SELECT
+
+        bcht.HEADER_ID headerId,
+        bcht.DOCUMENT_NUMBER documentNumber,
+        bcht.PREPARED_DATE PREPARED_DATE,
+        bcht.PREPARED_BY preparedBy,
+        (select v.FIRST_NAME||v.LAST_NAME from stm.stm_employees_v v
+        where bcht.PREPARED_BY=v.EMPLOYEE_ID ) preparedByName,
+        bcht.ORGANIZATION_ID organizationId,
+        sov.NAME organizationName,
+        bcht.CLAIM_AMOUNT claimAmount,
+        bcht.COMMENTS comments,
+        bcht.STATUS status,
+        bcht. CREATION_DATE,
+
+        fbrt.ORGANIZATION_ID reqOrganizationId,
+        (SELECT NAME  FROM   stm.stm_organizations_v ov
+        WHERE   fbrt.ORGANIZATION_ID=ov.ORGANIZATION_ID
+        and rownum=1
+        )reqOrganizationName,
+        fbrt.DOCUMENT_NUMBER reqDocumentNumber,
+        fbrt.PROJECT_NAME projectName,
+        fbrt.PAY_AMOUNT payAmount
+        FROM fdm.FDM_BOND_CLAIM_HEADER_T bcht,
+        fdm.fdm_bond_reqs_t fbrt，
+        stm.stm_organizations_v sov
+        WHERE bcht.REQ_ID=fbrt.REQ_ID(+)
+        and bcht.ORGANIZATION_ID=sov.ORGANIZATION_ID(+)
+
+
+        and bcht.ORGANIZATION_ID in (
+
+        SELECT DISTINCT V.organization_id_child organizationId
+        FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+        STM.STM_ORGANIZATIONS_V SOV
+        WHERE SOV.organization_id = V.organization_id_child
+        AND SOV.TYPE = 'CCEED5'
+        AND v.org_structure_version_id = 4061
+        CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+        START WITH v.organization_id_parent IN
+        (select sov1.org_id
+
+        from stm_per_assignments_v v1,
+        stm.stm_per_people_v spp1,
+        stm_organizations_v sov1
+        where v1.person_id = spp1.PERSON_ID
+        and sov1.organization_id = v1.ORGANIZATION_ID
+        and trunc(sysdate) between spp1.EFFECTIVE_START_DATE and
+        spp1.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v1.EFFECTIVE_START_DATE and
+        v1.EFFECTIVE_END_DATE
+        AND spp1.EMPLOYEE_NUMBER =#{cscecUser.userCode})
+        UNION
+
+        select SOV3.org_id organizationId
+        from stm_per_assignments_v v3, stm.stm_per_people_v spp3,
+        STM.STM_ORGANIZATIONS_V SOV3
+        where v3.person_id = spp3.PERSON_ID
+        and sov3.organization_id = v3.ORGANIZATION_ID
+        and trunc(sysdate) between spp3.EFFECTIVE_START_DATE and
+        spp3.EFFECTIVE_END_DATE
+        and trunc(sysdate) between v3.EFFECTIVE_START_DATE and
+        v3.EFFECTIVE_END_DATE
+        and spp3.EMPLOYEE_NUMBER = #{cscecUser.userCode}
+        )
+
+        )temp1
+
+        <where>
+            <if test="bondClaimSimple.documentNumber != null and bondClaimSimple.documentNumber  != ''  ">
+                documentNumber like concat(concat('%', #{bondClaimSimple.documentNumber}),'%')
+            </if>
+            <if test="bondClaimSimple.reqDocumentNumber  != null and bondClaimSimple.reqDocumentNumber  != ''  ">
+                and reqDocumentNumber like concat(concat('%', #{bondClaimSimple.reqDocumentNumber}),'%')
+            </if>
+            <if test="bondClaimSimple.projectName  != null and bondClaimSimple.projectName  != ''  ">
+                and projectName like concat(concat('%',#{bondClaimSimple.projectName}),'%')
+            </if>
+            <if test="bondClaimSimple.organizationName  != null and bondClaimSimple.organizationName  != ''  ">
+                and organizationName=#{bondClaimSimple.organizationName}
+            </if>
+
+            <if test="bondClaimSimple.organizationId != null and bondClaimSimple.organizationId != ''">
+                <if test="containChild == true ">
+                    and organizationId in
+                    (SELECT DISTINCT V.organization_id_child organizationId
+                    FROM STM.STM_ORG_STRUCTURE_ELEMENT_V V,
+                    STM.STM_ORGANIZATIONS_V SOV
+                    WHERE SOV.organization_id = V.organization_id_child
+                    AND SOV.TYPE = 'CCEED5'
+                    AND v.org_structure_version_id = 4061
+                    CONNECT BY V.organization_id_parent = PRIOR V.organization_id_child
+                    START WITH v.organization_id_parent =#{bondClaimSimple.organizationId}
+                    union
+                    select #{bondClaimSimple.organizationId} organizationId from dual
+                    )
+                </if>
+                <if test="containChild == false">
+                    and organizationId=#{bondClaimSimple.organizationId}
+                </if>
+            </if>
+
+            <if test="bondClaimSimple.comments  != null and bondClaimSimple.comments  != ''  ">
+                and comments like concat(concat('%', #{bondClaimSimple.comments}),'%')
+            </if>
+            <if test="bondClaimSimple.status  != null and bondClaimSimple.status  != ''  ">
+                and status= #{bondClaimSimple.status}
+            </if>
+            <if test="bondClaimSimple.claimAmountFrom  != null  ">
+                and claimAmount>= #{bondClaimSimple.claimAmountFrom}
+            </if>
+            <if test="bondClaimSimple.claimAmountTo != null ">
+                and claimAmount &lt;= #{bondClaimSimple.claimAmountTo}
+            </if>
+            <if test="bondClaimSimple.payAmountFrom  != null  ">
+                and payAmount >= #{bondClaimSimple.payAmountFrom}
+            </if>
+            <if test="bondClaimSimple.payAmountTo != null ">
+                and payAmount &lt;= #{bondClaimSimple.payAmountTo}
+            </if>
+            <if test="bondClaimSimple.preparedDateFrom  != null and bondClaimSimple.preparedDateFrom  != ''  ">
+                and PREPARED_DATE >= to_date(#{bondClaimSimple.preparedDateFrom} ,'yyyy-mm-dd')
+            </if>
+            <if test="bondClaimSimple.preparedDateTo  != null and bondClaimSimple.preparedDateTo  != ''  ">
+                and PREPARED_DATE &lt;= to_date(#{bondClaimSimple.preparedDateTo},'yyyy-mm-dd')
+            </if>
+            <if test="bondClaimSimple.searchValue!=null and bondClaimSimple.searchValue!='' ">
+                AND documentNumber ||'~' || reqDocumentNumber || '~' || comments like
+                CONCAT(CONCAT('%',#{bondClaimSimple.searchValue}),'%')
+            </if>
+
+        </where>
+        <if test="bondClaimSimple.orderCol==null or bondClaimSimple.orderCol==''  ">
+            ORDER BY CREATION_DATE desc
+        </if>
+        <if test="bondClaimSimple.orderCol!=null and bondClaimSimple.orderCol!=''">
+            ORDER BY  <![CDATA[${bondClaimSimple.orderCol}]]>
+        </if>
+        <if test="bondClaimSimple.orderType!=null and bondClaimSimple.orderType!='' and bondClaimSimple.orderCol!=null and bondClaimSimple.orderCol!=''">
+            ${bondClaimSimple.orderType}
+        </if>
+        <if test="bondClaimSimple.orderCol!=null and bondClaimSimple.orderCol!=''">
+            <if test="bondClaimSimple.orderType==null or bondClaimSimple.orderType==''">
+                DESC
+            </if>
+        </if>
+        )temp
+        )temp2
+        where rn <![CDATA[>#{start}]]> and rn <![CDATA[<=#{end}]]>
+    </select>
+
+    <!--保证认领详情的状态-->
+    <update id="updateBondClaimDetailStatus">
+         UPDATE
+          fdm.FDM_BOND_CLAIM_HEADER_T
+          set STATUS=#{bondClaimDetail.status},
+          OBJECT_VERSION_NUMBER=OBJECT_VERSION_NUMBER+1
+          WHERE
+          HEADER_ID=#{bondClaimDetail.headerId}
+    </update>
+
+
+    <!--非局代收代付，生成凭证接口-->
+    <select id="InsertBondErpByTrans" parameterType="java.util.Map" statementType="CALLABLE">
+        {
+        call
+        stm.stm_fdm_bond_common_pkg.InsertBondErpByTrans(
+        #{p_source_id,mode=IN,jdbcType=NUMERIC},
+        #{p_cbs_trans_id,mode=IN,jdbcType=VARCHAR},
+        #{x_error_msg,mode=OUT,jdbcType=VARCHAR},
+        #{x_result_flag,mode=OUT,jdbcType=VARCHAR}
+        )
+        }
+    </select>
+
+
+</mapper>

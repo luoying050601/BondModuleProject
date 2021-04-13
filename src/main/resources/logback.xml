@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d %p (%file:%line\)-%m%n</pattern>
+            <charset>GBK</charset>
+        </encoder>
+    </appender>
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="com.cscec8b.bond.module.dao" level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </logger>
+</configuration>
